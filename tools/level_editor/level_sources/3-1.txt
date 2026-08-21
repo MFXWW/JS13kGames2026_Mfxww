@@ -1,0 +1,19 @@
+:map
+base solid
+empty 3 4 28 11
+
+:object
+blackhole bh1 10 12
+destination dest1 26 11
+blackhole bh2 26 12
+
+:script
+wait player-in-area 9 10 2 2
+move bh1 10 11.5 0.25
+wait player-in-area 15 10 2 2
+move bh1 19 11.5 0.5
+wait player-in-area 25 10 2 2
+move bh2 26 11.5 0.25
+move dest1 28 11 0.25
+
+:end

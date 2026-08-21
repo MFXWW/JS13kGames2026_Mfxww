@@ -1,0 +1,29 @@
+:map
+base solid
+empty 3 3 28 7
+empty 9 8 22 15
+
+:object
+destination dest1 26 7
+floatrect fr1 5 14 4 1
+bounce bn1 23 13
+floatrect fr2 5 11 4 1
+bounce bn2 7 10
+bounce bn3 8 10 -no-collision
+blackhole bh1 8 10 -hidden
+
+:script
+wait player-in-area 8 6 1 2
+move fr1 23 14 8
+wait for-seconds 3
+move bn1 8 13 6
+wait for-seconds 2
+move fr2 23 11 8
+wait for-seconds 1.5
+move bh1 8 10.5
+move bn3 23 10 5
+move bh1 23 10.5 5
+wait for-seconds 2
+move bn2 24 10 5
+
+:end

@@ -1,0 +1,27 @@
+:map
+base empty
+solid 0 0 1 15
+solid 2 12 6 15
+solid 30 0 31 15
+solid 25 12 29 15
+
+:object
+destination dest1 28 11
+bounce bn1 1 11
+bounce bn2 30 8
+bounce bn3 1 4 -no-collision
+bounce bn4 0 4
+
+:script
+// sp 4 10
+wait player-in-area 6 10 1 1
+move bn1 30 11 13
+wait player-in-area 23 6 1 6
+move dest1 28 3 0.25
+move bn2 1 8 14
+wait for-seconds 5
+move bn3 30 4 14
+wait for-seconds 3
+move bn4 31 4 14
+
+:end

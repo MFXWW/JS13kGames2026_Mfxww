@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<title>Level Editor</title>
+	<style>
+		/* ===== CSS Custom Properties (Theme System) ===== */
+		:root, [data-theme="light"] {
+			--bg-page: #f0f0f0;
+			--bg-panel: #ffffff;
+			--bg-toolbar: #e0e0e0;
+			--bg-tab-bar: #cccccc;
+			--text-primary: #111111;
+			--text-secondary: #444444;
+			--text-tertiary: #888888;
+			--toolbar-text: #111111;
+			--toolbar-text-muted: #444444;
+			--toolbar-text-dim: #888888;
+			--border: #cccccc;
+			--border-light: #e0e0e0;
+			--danger: #cc0000;
+			--danger-light: #f5e6e6;
+			--hover-bg: #e8e8e8;
+			--select-bg: #dddddd;
+			--canvas-bg: #e0e0e0;
+			--canvas-solid: #555555;
+			--canvas-grid: rgba(0,0,0,0.06);
+			--shadow: 0 1px 2px rgba(0,0,0,0.08);
+			--shadow-lg: 0 2px 8px rgba(0,0,0,0.12);
+			--input-bg: #ffffff;
+			--input-border: #bbbbbb;
+			--scrollbar-thumb: #bbbbbb;
+			--scrollbar-track: #e8e8e8;
+			--modal-overlay: rgba(0,0,0,0.4);
+		}
+		[data-theme="dark"] {
+			--bg-page: #1a1a1a;
+			--bg-panel: #222222;
+			--bg-toolbar: #222222;
+			--bg-tab-bar: #222222;
+			--text-primary: #e0e0e0;
+			--text-secondary: #999999;
+			--text-tertiary: #777777;
+			--toolbar-text: #e0e0e0;
+			--toolbar-text-muted: #999999;
+			--toolbar-text-dim: #777777;
+			--border: #444444;
+			--border-light: #333333;
+			--danger: #ff5555;
+			--danger-light: #331111;
+			--hover-bg: #2a2a2a;
+			--select-bg: #333333;
+			--canvas-bg: #1a1a1a;
+			--canvas-solid: #666666;
+			--canvas-grid: rgba(255,255,255,0.06);
+			--shadow: 0 1px 2px rgba(0,0,0,0.3);
+			--shadow-lg: 0 2px 8px rgba(0,0,0,0.4);
+			--input-bg: #1a1a1a;
+			--input-border: #444444;
+			--scrollbar-thumb: #555555;
+			--scrollbar-track: #222222;
+			--modal-overlay: rgba(0,0,0,0.6);
+		}
+
+		/* ===== Global Reset & Base ===== */
+		* { margin:0; padding:0; box-sizing:border-box; }
+		body {
+			background: var(--bg-page);
+			font-family: 'Segoe UI', 'Inter', -apple-system, Arial, sans-serif;
+			color: var(--text-primary);
+			min-height: 100vh;
+			padding: 12px;
+		}
+		::-webkit-scrollbar { width: 8px; height: 8px; }
+		::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+		::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); }
+
+		/* ===== Shared Components ===== */
+		.panel {
+			background: var(--bg-panel);
+			padding: 14px;
+			border: 1px solid var(--border);
+		}
+		.btn {
+			padding: 5px 12px;
+			font-size: 13px;
+			cursor: pointer;
+			border: 1px solid var(--border);
+			font-weight: 500;
+			background: transparent;
+			color: var(--text-primary);
+			display: inline-flex;
+			align-items: center;
+			gap: 5px;
+			white-space: nowrap;
+		}
+		.btn:hover { background: var(--hover-bg); }
+		.btn-primary { background: var(--text-primary); color: var(--bg-panel); border-color: var(--text-primary); }
+		.btn-primary:hover { opacity: 0.85; }
+		.btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+		.btn-danger:hover { opacity: 0.85; }
+		.btn-ghost { background: transparent; border-color: var(--border); color: var(--text-secondary); }
+		.btn-ghost:hover { background: var(--hover-bg); color: var(--text-primary); }
+		.btn:disabled { opacity: 0.4; cursor: default; }
+		.btn:disabled:hover { background: transparent; opacity: 0.4; }
+
+		input, select, textarea {
+			border: 1px solid var(--input-border);
+			padding: 3px 6px;
+			font-size: 13px;
+			outline: none;
+			background: var(--input-bg);
+			color: var(--text-primary);
+		}
+		input:focus, select:focus, textarea:focus {
+			border-color: var(--text-primary);
+		}
+		::placeholder { color: var(--text-tertiary); }
+		label { font-size: 12px; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px; }
+
+		/* ===== Toolbar ===== */
+		.toolbar {
+			background: var(--bg-toolbar);
+			padding: 8px 12px;
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 6px;
+			border: 1px solid var(--border);
+		}
+		.toolbar-title {
+			font-size: 15px;
+			font-weight: 700;
+			color: var(--toolbar-text);
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			margin-right: 6px;
+		}
+		.toolbar-divider { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+		.toolbar-spacer { flex: 1; min-width: 8px; }
+		.toolbar-label {
+			font-size: 12px;
+			color: var(--toolbar-text-muted);
+			font-weight: 500;
+			max-width: 200px;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		/* ===== File Dropdown ===== */
+		.dropdown-menu {
+			position: absolute; top: 100%; left: 0; margin-top: 2px;
+			background: var(--bg-panel);
+			border: 1px solid var(--border);
+			box-shadow: var(--shadow-lg);
+			z-index: 100;
+			min-width: 200px;
+			display: none;
+		}
+		.dropdown-item {
+			padding: 7px 12px;
+			font-size: 13px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			color: var(--text-primary);
+			border-bottom: 1px solid var(--border-light);
+		}
+		.dropdown-item:last-child { border-bottom: none; }
+		.dropdown-item:hover { background: var(--hover-bg); }
+		.dropdown-item.danger { color: var(--danger); }
+		.dropdown-item.danger:hover { background: var(--danger-light); }
+		.dropdown-divider { height: 1px; background: var(--border-light); margin: 4px 0; }
+		.dropdown-shortcut { margin-left: auto; font-size: 11px; color: var(--text-tertiary); }
+
+		/* ===== Tabs ===== */
+		.tab-bar {
+			display: flex;
+			border-bottom: 2px solid var(--text-primary);
+		}
+		.tab {
+			padding: 6px 16px;
+			cursor: pointer;
+			font-size: 13px;
+			font-weight: 500;
+			border: 1px solid var(--border);
+			border-bottom: none;
+			background: var(--bg-tab-bar);
+			color: var(--text-secondary);
+			flex: 1;
+			text-align: center;
+			margin-right: -1px;
+		}
+		.tab:last-child { margin-right: 0; }
+		.tab:hover { color: var(--text-primary); }
+		.tab.active { background: var(--bg-panel); color: var(--text-primary); font-weight: 600; }
+
+		/* ===== Trap Palette ===== */
+		.trap-grid {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 4px;
+			margin-bottom: 10px;
+		}
+		.trap-btn {
+			padding: 6px 4px;
+			cursor: pointer;
+			border: 1px solid var(--border);
+			font-size: 12px;
+			text-align: center;
+			background: var(--bg-panel);
+			color: var(--text-primary);
+			font-weight: 500;
+		}
+		.trap-btn:hover { background: var(--hover-bg); }
+		.trap-btn.active { background: var(--select-bg); border-color: var(--text-primary); }
+
+		/* ===== Object/Instruction Rows ===== */
+		.obj-row {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 4px 6px;
+			border-bottom: 1px solid var(--border-light);
+			font-size: 13px;
+			cursor: pointer;
+		}
+		.obj-row:hover { background: var(--hover-bg); }
+		.obj-row .del-btn {
+			background: none;
+			border: none;
+			cursor: pointer;
+			color: var(--text-tertiary);
+			font-size: 15px;
+			width: 20px; height: 20px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			opacity: 0;
+		}
+		.obj-row:hover .del-btn { opacity: 1; }
+		.obj-row .del-btn:hover { color: var(--danger); }
+
+		/* ===== Section Title ===== */
+		.section-title {
+			font-size: 13px;
+			font-weight: 600;
+			color: var(--text-primary);
+			margin-bottom: 8px;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		/* ===== Canvas ===== */
+		#mapCanvas { cursor: crosshair; display: block; }
+
+		/* ===== Theme Toggle ===== */
+		.theme-toggle {
+			background: transparent;
+			border: 1px solid var(--border);
+			color: var(--toolbar-text-muted);
+			width: 30px; height: 30px;
+			cursor: pointer;
+			font-size: 16px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.theme-toggle:hover { background: var(--hover-bg); color: var(--toolbar-text); }
+
+		/* ===== Modal ===== */
+		.modal-overlay {
+			display: none;
+			position: fixed; top: 0; left: 0;
+			width: 100%; height: 100%;
+			background: var(--modal-overlay);
+			z-index: 1000;
+			justify-content: center;
+			align-items: center;
+		}
+		.modal-box {
+			background: var(--bg-panel);
+			padding: 20px;
+			width: min(480px, 90vw);
+			max-height: 80vh;
+			box-shadow: var(--shadow-lg);
+			display: flex;
+			flex-direction: column;
+			border: 1px solid var(--border);
+		}
+		.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary); }
+		.modal-list {
+			flex: 1; overflow-y: auto;
+			border: 1px solid var(--border);
+			padding: 4px;
+			min-height: 200px; max-height: 400px;
+			font-size: 13px;
+		}
+		.modal-list-item {
+			display: flex; align-items: center; justify-content: space-between;
+			padding: 8px 10px;
+			border-bottom: 1px solid var(--border-light);
+			cursor: pointer;
+		}
+		.modal-list-item:hover { background: var(--hover-bg); }
+		.modal-list-item:last-child { border-bottom: none; }
+
+		/* ===== Toast ===== */
+		#toast {
+			display: none;
+			position: fixed; top: 16px; right: 16px;
+			background: #111;
+			color: #fff;
+			padding: 10px 18px;
+			font-size: 13px;
+			z-index: 2000;
+			box-shadow: var(--shadow-lg);
+			opacity: 0;
+			transition: opacity .3s;
+			max-width: 360px;
+		}
+
+		/* ===== Status Bar ===== */
+		.status-bar {
+			background: var(--bg-toolbar);
+			padding: 5px 12px;
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 6px 16px;
+			font-size: 11px;
+			color: var(--toolbar-text-muted);
+			font-family: 'Consolas', 'Courier New', monospace;
+			border: 1px solid var(--border);
+		}
+		.status-bar .sb-item { white-space: nowrap; }
+		.status-bar .sb-hint { margin-left: auto; color: var(--toolbar-text-dim); }
+
+		/* ===== Script Error ===== */
+		.script-error-row {
+			padding: 3px 6px;
+			display: flex;
+			align-items: flex-start;
+			gap: 6px;
+			font-size: 12px;
+			font-family: monospace;
+			cursor: pointer;
+			border-bottom: 1px solid var(--border-light);
+		}
+		.script-error-row:last-child { border-bottom: none; }
+		.script-error-row.err { background: var(--danger-light); color: var(--danger); }
+		.script-error-row.warn { background: var(--hover-bg); color: var(--text-secondary); }
+
+		/* ===== Responsive ===== */
+		.editor-layout { display: flex; flex-direction: row; gap: 12px; align-items: flex-start; }
+		.editor-canvas-wrap { flex: 0 0 auto; overflow: auto; max-width: 100%; }
+		.editor-side {
+			flex: 1;
+			min-width: 280px;
+			max-width: 420px;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+		}
+		@media (max-width: 1023px) {
+			.editor-layout { flex-direction: column; align-items: stretch; }
+			.editor-side { max-width: none; min-width: 0; }
+			.editor-canvas-wrap { overflow: auto hidden; }
+		}
+		@media (max-width: 639px) {
+			body { padding: 8px; }
+			.toolbar { padding: 6px 8px; gap: 4px; }
+			.toolbar-title { font-size: 14px; }
+			.panel { padding: 10px; }
+			.btn { font-size: 12px; padding: 4px 8px; }
+		}
+	</style>
+</head>
+<body>
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1280px;margin:0 auto;">
+
+	<!-- ===== Toolbar ===== -->
+	<div class="toolbar">
+		<div class="toolbar-title">🎮 Level Editor</div>
+		<div style="position:relative;" id="fileMenuContainer">
+			<button id="fileMenuBtn" class="btn btn-ghost" style="border-color:var(--border);color:var(--toolbar-text);">📄 文件 ▾</button>
+			<div class="dropdown-menu" id="fileDropdown">
+				<div class="dropdown-item" data-action="new">🆕 新建 <span class="dropdown-shortcut">Ctrl+N</span></div>
+				<div class="dropdown-item" data-action="open">📂 打开 <span class="dropdown-shortcut">Ctrl+O</span></div>
+				<div class="dropdown-divider"></div>
+				<div class="dropdown-item" data-action="save">💾 保存 <span class="dropdown-shortcut">Ctrl+S</span></div>
+				<div class="dropdown-item" data-action="saveas">💾 另存为... <span class="dropdown-shortcut">Ctrl+Shift+S</span></div>
+				<div class="dropdown-divider"></div>
+				<div class="dropdown-item" data-action="export">📋 导出为文本 <span class="dropdown-shortcut">Ctrl+E</span></div>
+				<div class="dropdown-item" data-action="import">📋 从文本导入 <span class="dropdown-shortcut">Ctrl+Shift+I</span></div>
+				<div class="dropdown-item" data-action="rename">✏️ 重命名</div>
+				<div class="dropdown-divider"></div>
+				<div class="dropdown-item danger" data-action="delete">🗑️ 删除当前关卡</div>
+			</div>
+		</div>
+		<div class="toolbar-divider"></div>
+		<button id="saveQuickBtn" class="btn btn-primary" style="padding:5px 12px;font-size:12px;" title="保存 (Ctrl+S)">💾 保存</button>
+		<button id="loadQuickBtn" class="btn btn-ghost" style="padding:5px 12px;font-size:12px;" title="打开 (Ctrl+O)">📂 打开</button>
+		<div class="toolbar-spacer"></div>
+		<span class="toolbar-label" id="currentFileLabel"></span>
+		<button class="theme-toggle" id="themeToggleBtn" title="切换主题">🌙</button>
+	</div>
+
+	<!-- ===== Main Layout ===== -->
+	<div class="editor-layout">
+
+		<!-- ===== Canvas Area ===== -->
+		<div class="panel editor-canvas-wrap">
+			<canvas id="mapCanvas" width="800" height="400" style="border:1px solid var(--border);display:block;"></canvas>
+			<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12px;color:var(--text-secondary);">
+				<label>Tile: <input id="tileSizeInput" type="number" min="8" max="64" value="24" style="width:50px;" /></label>
+				<label>Base: <select id="baseSelect"><option value="0">empty (0)</option><option value="1">solid (1)</option></select></label>
+				<span id="canvasHint" style="color:var(--text-tertiary);font-size:11px;flex:1;min-width:150px;">Shift+拖拽编辑地图 · 选物体后点击放置</span>
+			</div>
+			<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px 14px;font-size:10px;color:var(--text-tertiary);">
+				<span>Tab=切换面板</span>
+				<span>Del=删除</span>
+				<span>Esc=取消选中</span>
+				<span>方向键=移动物体</span>
+				<span>Shift+方向=大步</span>
+				<span>Ctrl+D=复制</span>
+			</div>
+		</div>
+
+		<!-- ===== Sidebar ===== -->
+		<div class="editor-side">
+
+			<!-- Pill Tabs -->
+			<div class="tab-bar">
+				<div id="tabMap" class="tab active" onclick="switchTab('map')">🗺️ 地图</div>
+				<div id="tabObj" class="tab" onclick="switchTab('obj')">📦 物体</div>
+				<div id="tabScript" class="tab" onclick="switchTab('script')">📜 脚本</div>
+			</div>
+
+			<!-- Tab: Map -->
+			<div id="panelMap" class="panel" style="display:block;">
+				<div class="section-title">🗺️ 地图指令</div>
+				<div id="instrList" style="max-height:180px;overflow-y:auto;margin-bottom:8px;font-size:13px;"></div>
+				<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;">
+					<select id="mType" style="width:58px;"><option value="1">solid</option><option value="0">empty</option></select>
+					<input id="mSX" type="number" min="0" max="31" value="0" style="width:42px;" placeholder="sX" />
+					<input id="mSY" type="number" min="0" max="15" value="0" style="width:42px;" placeholder="sY" />
+					<input id="mEX" type="number" min="0" max="31" value="0" style="width:42px;" placeholder="eX" />
+					<input id="mEY" type="number" min="0" max="15" value="0" style="width:42px;" placeholder="eY" />
+				</div>
+				<div style="display:flex;gap:5px;">
+					<button id="addInstrBtn" class="btn btn-primary" style="font-size:12px;padding:4px 10px;">添加</button>
+					<button id="updateInstrBtn" class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" disabled>修改</button>
+					<button id="deleteInstrBtn" class="btn btn-danger" style="font-size:12px;padding:4px 10px;" disabled>删除</button>
+				</div>
+			</div>
+
+			<!-- Tab: Objects -->
+			<div id="panelObj" class="panel" style="display:none;">
+				<div class="section-title">📦 陷阱物体</div>
+				<div class="trap-grid" id="trapPalette"></div>
+				<div id="objForm" style="display:none;border:1px solid var(--border);padding:8px;margin-bottom:8px;">
+					<div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">
+						<span style="font-size:12px;font-weight:600;color:var(--text-primary);" id="objTypeLabel">—</span>
+						<label>X: <input id="objX" type="number" min="0" max="31" value="5" style="width:38px;" /></label>
+						<label>Y: <input id="objY" type="number" min="0" max="15" value="5" style="width:38px;" /></label>
+						<label id="objWLabel">W: <input id="objW" type="number" min="1" max="32" value="2" style="width:38px;" /></label>
+						<label id="objHLabel">H: <input id="objH" type="number" min="1" max="16" value="2" style="width:38px;" /></label>
+					</div>
+					<div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:5px;">
+						<label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input id="objHidden" type="checkbox" /> 隐藏</label>
+						<label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input id="objNoCollision" type="checkbox" /> 无碰撞</label>
+					</div>
+					<div style="display:flex;gap:5px;margin-top:6px;">
+						<button id="addObjBtn" class="btn btn-primary" style="font-size:12px;padding:4px 10px;">放置</button>
+						<button id="updateObjBtn" class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" disabled>修改</button>
+						<button id="deleteObjBtn" class="btn btn-danger" style="font-size:12px;padding:4px 10px;" disabled>删除</button>
+					</div>
+				</div>
+				<div id="objList" style="max-height:140px;overflow-y:auto;font-size:13px;"></div>
+			</div>
+
+			<!-- Tab: Script -->
+			<div id="panelScript" class="panel" style="display:none;">
+				<div class="section-title">📜 脚本指令</div>
+				<div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;line-height:1.6;">
+					<code style="font-size:11px;">move &lt;id&gt; &lt;x&gt; &lt;y&gt; &lt;dur&gt; [-block]</code><br>
+					<code style="font-size:11px;">wait player-in-area &lt;x1&gt; &lt;y1&gt; &lt;w&gt; &lt;h&gt;</code><br>
+					<code style="font-size:11px;">wait button-press &lt;id&gt;</code><br>
+					<code style="font-size:11px;">wait for-seconds &lt;n&gt;</code>
+				</div>
+				<textarea id="scriptArea" style="width:100%;min-height:160px;height:180px;resize:vertical;font-family:'Consolas','Courier New',monospace;font-size:13px;padding:8px;" placeholder="; 示例&#10;move fr1 28 12 1.5 -block&#10;wait player-in-area 25 10 2 2&#10;move fr2 20 12 0.5"></textarea>
+				<div id="scriptErrorBar" style="margin-top:6px;display:none;">
+					<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+						<span id="scriptErrSummary" style="font-size:12px;font-weight:600;color:var(--danger);"></span>
+						<button id="scriptErrClearBtn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text-tertiary);text-decoration:underline;">清除</button>
+					</div>
+					<div id="scriptErrorList" style="max-height:100px;overflow-y:auto;font-size:12px;font-family:monospace;"></div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+	<!-- ===== Status Bar ===== -->
+	<div class="status-bar" id="statusBarContainer" style="margin-top:4px;">
+		<span class="sb-item" id="statusBar">—</span>
+		<span class="sb-hint">Ctrl+N新建 · Ctrl+S保存 · Ctrl+O打开 · Ctrl+E导出</span>
+	</div>
+
+</div>
+
+<!-- ===== Load Level Modal ===== -->
+<div class="modal-overlay" id="loadModal">
+	<div class="modal-box">
+		<div class="modal-title">📂 加载关卡</div>
+		<div class="modal-list" id="loadModalList">
+			<div style="padding:20px;text-align:center;color:var(--text-tertiary);">正在加载关卡列表...</div>
+		</div>
+		<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+			<button id="loadModalCancelBtn" class="btn btn-ghost" style="padding:6px 16px;">取消</button>
+		</div>
+	</div>
+</div>
+
+<!-- ===== Toast ===== -->
+<div id="toast"></div>
+
+<script src="level_editor.js"></script>
+</body>
+</html>

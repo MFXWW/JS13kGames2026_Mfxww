@@ -1,0 +1,30 @@
+:map
+base empty
+solid 2 11 5 11
+solid 28 11 29 11
+
+:object
+floatrect fr1 6 11 2 1 -hidden
+floatrect fr2 8 11 2 1 -no-collision
+floatrect fr3 10 11 2 1 -hidden
+floatrect fr4 12 11 2 1 -no-collision
+floatrect fr6 16 11 2 1
+floatrect fr7 18 11 2 1 -hidden
+floatrect fr8 20 11 2 1 -no-collision
+floatrect fr9 22 11 2 1 -hidden
+floatrect fr10 24 11 2 1 -no-collision
+floatrect fr5 26 11 2 1
+destination dest1 28 10
+
+:script
+// sp 3 9
+wait player-in-area 13 8 1 2
+wait for-seconds 1
+move fr6 14 11 1 -block
+wait for-seconds 1
+move fr6 16 11 0.5
+wait player-in-area 25 8 1 2
+move fr5 28 11 0.25 -block
+move fr5 26 11 1
+
+:end

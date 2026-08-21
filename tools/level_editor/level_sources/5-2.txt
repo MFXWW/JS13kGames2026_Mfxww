@@ -1,0 +1,30 @@
+:map
+base solid
+empty 2 6 29 11
+
+:object
+blackhole bh1 6 11 -no-collision
+blackhole bh2 7 11 -hidden
+blackhole bh3 12 11 -no-collision
+blackhole bh4 11 11 -hidden
+destination dest1 28 11
+blackhole bh5 16 11 -hidden
+blackhole bh6 17 11 -no-collision
+blackhole bh7 18 11 -hidden
+bounce bn1 24 12
+blackhole bh8 24 8 -hidden
+blackhole bh9 25 12 -no-collision
+
+:script
+move bh1 6 11.5
+move bh2 7 11.5
+move bh3 12 11.5
+move bh4 11 11.5
+move bh5 16 11.5
+move bh6 17 11.5
+move bh7 18 11.5
+wait player-in-area 24 11 1 1
+move bn1 24 11 0.25
+move bh9 25 8
+
+:end

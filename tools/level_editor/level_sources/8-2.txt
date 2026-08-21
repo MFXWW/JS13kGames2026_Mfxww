@@ -1,0 +1,34 @@
+:map
+base empty
+
+:object
+floatrect fr1 9 9 2 7
+floatrect fr2 11 8 2 8
+floatrect fr3 13 7 2 9
+floatrect fr4 15 6 2 10
+floatrect fr5 17 5 2 11
+floatrect fr6 19 4 2 12
+floatrect fr7 21 3 2 13
+destination dest1 22 2 -no-collision
+button btn1 15 7
+destination dest2 22 9
+blackhole bh1 22 2 -hidden
+
+:script
+wait player-in-area 12 6 1 1
+move fr1 9 15 1
+wait player-in-area 14 5 1 1
+move fr2 11 15 1
+wait player-in-area 16 4 1 1
+move fr3 13 15 1
+wait player-in-area 17 3 1 1
+move fr5 17 15 1
+move btn1 15 5 0.5
+wait button-press btn1
+move fr5 17 5 1
+wait player-in-area 21 2
+move fr7 21 6 0.25
+wait player-in-area 21 5 1 1
+move fr7 21 10 1
+
+:end

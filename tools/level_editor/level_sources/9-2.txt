@@ -1,0 +1,41 @@
+:map
+base solid
+empty 3 3 28 13
+solid 3 10 27 10
+solid 4 6 28 6
+
+:object
+oneway ow1 28 10 1
+oneway ow2 28 11 1
+oneway ow3 28 12 1
+oneway ow4 3 8 1
+oneway ow5 3 7 1
+oneway ow6 3 6 1
+blackhole bh1 17 14
+blackhole bh2 10 14
+destination dest1 26 5
+oneway ow7 28 13 1
+oneway ow8 3 9 1
+
+:script
+wait player-in-area 10 12 1 2
+move bh2 10 13.5 0.25
+wait player-in-area 17 12 1 2
+move bh1 17 13.5 0.25
+wait player-in-area 22 8 2 2
+move bh1 17 9.5 0.5 -block
+move bh1 29 9.5 2
+wait player-in-area 10 8 1 2
+move bh2 10 9.5 0.5
+move bh1 29 5.5
+wait player-in-area 3 4 1 2
+move bh1 2 5.5 3
+wait player-in-area 10 4 1 2
+move bh2 10 5.5 0.25
+wait player-in-area 20 4 1 2
+move bh2 29 5.5 1
+wait player-in-area 24 4 1 2
+move bh2 24 6
+move bh2 24 5.5 0.25
+
+:end

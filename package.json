@@ -1,0 +1,12 @@
+{
+  "name": "fallen-rainbow",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Fallen rainbow (13 times of death V2) — js13k-style web game",
+  "scripts": {
+    "build": "build\\build_all.bat",
+    "serve": "python -m http.server 8000",
+    "combine:sprites": "tools\\bmp_combiner\\combine.bat",
+    "compile:levels": "tools\\level_editor\\levelCompiler.bat"
+  }
+}

@@ -1,0 +1,49 @@
+:map
+base empty
+solid 0 12 31 15
+
+:object
+floatrect fr1 0 12 32 1
+button btn1 4 13
+button btn2 15 13
+button btn3 28 13
+button btn4 22 13
+button btn5 9 13
+blackhole bh1 13 14
+blackhole bh2 14 14
+destination dest1 30 12
+
+:script
+move btn1 4 11 0.25
+wait button-press btn1
+move btn1 0 13
+move fr1 0 8 0.75 -block
+move btn2 15 7
+wait button-press btn2
+move fr1 0 3 0.75 -block
+move btn2 0 13
+move bh1 15 2
+move btn3 28 2
+wait button-press btn3
+move btn3 0 13
+move fr1 0 10 1 -block
+move bh1 26 9
+move bh2 30 9
+wait for-seconds 1
+move bh1 13 14
+move bh2 14 14
+move btn4 22 9
+wait button-press btn4
+move bh1 31 9.5
+move bh1 16 9.5 2 -block
+move bh1 31 9.5 0.75 -block
+move bh1 13 14
+move btn4 0 13
+move fr1 0 12 0.5 -block
+move btn5 9 11 0.5
+wait button-press btn5
+wait for-seconds 0.5
+move bh1 9 11
+move dest1 30 11 0.5
+
+:end

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fallen rainbow</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #111;
+            color: #aaa;
+            font-family: 'Courier New', 'Consolas', monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #headerBar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 540px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 0 4px;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+        #headerBar.visible { opacity: 1; }
+
+        #gameTitle {
+            font-size: 13px;
+            letter-spacing: 2px;
+            color: #555;
+        }
+        #levelDisplay {
+            font-size: 12px;
+            letter-spacing: 1px;
+            color: #666;
+        }
+
+        #gameContainer {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #gameCanvas {
+            border: 1px solid #333;
+            background: #000;
+            z-index: 10;
+        }
+        #imageStand { display: none; }
+
+        /* death overlay */
+        #deathOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: none;
+            z-index: 100;
+            pointer-events: none;
+            background: rgba(0,0,0,0.75);
+        }
+        #deathOverlay.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #deathMessage {
+            font-size: clamp(18px, 4vw, 30px);
+            letter-spacing: 1px;
+            text-align: center;
+            color: #bbb;
+            padding: 0 20px;
+            max-width: 500px;
+            line-height: 1.6;
+            animation: fadeUp 0.5s ease-out;
+        }
+
+        #deathHint {
+            font-size: 12px;
+            letter-spacing: 3px;
+            color: #444;
+            margin-top: 30px;
+            animation: fadeUp 0.9s ease-out;
+        }
+
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translateY(6px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* transition overlay */
+        #transitionOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            z-index: 200;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        #transitionOverlay.active { opacity: 1; }
+
+        #transitionMessage {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 210;
+            pointer-events: none;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            padding: 0 20px;
+        }
+        #transitionMessage.active { opacity: 1; }
+        #transitionMessage .level-label {
+            font-size: 14px;
+            letter-spacing: 3px;
+            color: #555;
+        }
+        #transitionMessage .level-sub {
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: #333;
+            margin-top: 10px;
+        }
+        #transitionMessage .cycle-notice {
+            font-size: 13px;
+            letter-spacing: 2px;
+            color: #666;
+            margin-top: 14px;
+        }
+
+        /* crowned death counter (top-right, visible only with crown) */
+        #deathCounter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 60;
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: #999;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            pointer-events: none;
+        }
+        #deathCounter.visible { opacity: 1; }
+
+        /* crown choice overlay */
+        #crownChoiceOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: none;
+            z-index: 300;
+            pointer-events: none;
+            background: rgba(0,0,0,0.85);
+        }
+        #crownChoiceOverlay.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #crownChoiceMessage {
+            font-size: clamp(16px, 3.2vw, 24px);
+            letter-spacing: 1px;
+            text-align: center;
+            color: #ccc;
+            padding: 0 20px;
+            max-width: 520px;
+            line-height: 1.7;
+            animation: fadeUp 0.5s ease-out;
+        }
+        #crownChoiceHint {
+            font-size: 12px;
+            letter-spacing: 3px;
+            color: #666;
+            margin-top: 34px;
+            animation: fadeUp 0.9s ease-out;
+        }
+
+        /* intro overlay (first launch only) */
+        #introOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            z-index: 400;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        #introOverlay.active { opacity: 1; pointer-events: auto; }
+        #introMessage {
+            max-width: 560px;
+            padding: 0 24px;
+            text-align: center;
+            color: #aaa;
+            line-height: 1.9;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+        #introMessage .intro-title {
+            font-size: 16px;
+            letter-spacing: 4px;
+            color: #ccc;
+            margin-bottom: 22px;
+        }
+        #introMessage .intro-hint {
+            font-size: 12px;
+            letter-spacing: 3px;
+            color: #555;
+            margin-top: 34px;
+        }
+
+        /* RGB glitch overlay (shown when crown is obtained) */
+        #glitchOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 350;
+            pointer-events: none;
+            display: none;
+        }
+        #glitchOverlay.active { display: block; animation: glitchFlash 0.9s steps(2, end); }
+        #glitchOverlay .glitch-bar {
+            position: absolute;
+            left: 0; right: 0;
+            height: 6px;
+            mix-blend-mode: screen;
+        }
+        @keyframes glitchFlash {
+            0%   { background: rgba(255,0,80,0.18); }
+            20%  { background: rgba(0,255,255,0.18); }
+            40%  { background: rgba(255,255,0,0.14); }
+            60%  { background: rgba(255,0,255,0.16); }
+            80%  { background: rgba(0,255,128,0.14); }
+            100% { background: rgba(255,255,255,0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="headerBar">
+        <span id="gameTitle">Fallen rainbow</span>
+        <span id="levelDisplay">—</span>
+    </div>
+
+    <div id="deathCounter">deaths: 0</div>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <canvas id="imageStand"></canvas>
+    </div>
+
+    <div id="deathOverlay">
+        <div id="deathMessage"></div>
+        <div id="deathHint">[ SPACE to try again ]</div>
+    </div>
+
+    <div id="transitionOverlay"></div>
+    <div id="transitionMessage">
+        <div class="level-label"></div>
+        <div class="level-sub"></div>
+        <div class="cycle-notice"></div>
+    </div>
+
+    <div id="crownChoiceOverlay">
+        <div id="crownChoiceMessage"></div>
+        <div id="crownChoiceHint">[ LEFT ] let go   [ RIGHT ] keep it</div>
+    </div>
+
+    <div id="glitchOverlay"></div>
+
+    <div id="introOverlay">
+        <div id="introMessage">
+            <div class="intro-title"></div>
+            <div class="intro-body"></div>
+            <div class="intro-hint"></div>
+        </div>
+    </div>
+
+<script src="js/copy.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/entities.js"></script>
+
+<script src="js/traps.js"></script>
+<script src="js/traps/trap_bounce.js"></script>
+<script src="js/traps/trap_button.js"></script>
+<script src="js/traps/trap_destination.js"></script>
+<script src="js/traps/trap_floatrect.js"></script>
+<script src="js/traps/trap_oneway.js"></script>
+<script src="js/traps/trap_blackhole.js"></script>
+
+<script src="js/level_parser.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game_core.js"></script>
+<script src="js/sound.js"></script>
+</body>
+</html>

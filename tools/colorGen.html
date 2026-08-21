@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>Seeded Color Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      gap: 20px; 
+      padding: 40px;
+      font-family: system-ui;
+    }
+    canvas { border: 1px solid #333; cursor: pointer; }
+    input {
+      padding: 8px 16px;
+      border: 1px solid #444;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      padding: 8px 24px;
+      border: none;
+      border-radius: 4px;
+      background: #4a9eff;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h2>点击画布随机 · 输入种子定点</h2>
+  <canvas id="c" width="600" height="300"></canvas>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <input id="seed" value="12345">
+    <button onclick="draw()">刷新</button>
+  </div>
+
+  <script>
+
+
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+
+    function draw() {
+      const seed = parseInt(document.getElementById('seed').value) || 0;
+      const { bg, fg } = seededColors(seed);
+      
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 28px system-ui';
+      ctx.fillText(`Seed: ${seed}`, 30, 50);
+      ctx.font = '16px system-ui';
+      ctx.fillText(bg, 30, 90);
+      ctx.fillText(fg, 30, 115);
+      
+      ctx.beginPath();
+      ctx.arc(450, 80, 50, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(400, 150, 100, 100);
+    }
+
+    canvas.addEventListener('click', () => {
+      document.getElementById('seed').value = Math.floor(Math.random() * 999999);
+      draw();
+    });
+
+    draw();
+  </script>
+</body>
+</html>

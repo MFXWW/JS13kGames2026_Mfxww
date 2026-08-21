@@ -1,0 +1,27 @@
+:map
+base solid
+empty 2 2 12 6
+empty 16 2 29 6
+empty 19 8 29 12
+empty 2 8 15 12
+empty 13 5 15 6
+empty 4 7 6 7
+empty 22 7 24 7
+
+:object
+floatrect fr1 13 5 3 1
+floatrect fr2 2 8 1 5
+blackhole bh1 23 13
+destination dest1 20 12
+floatrect fr3 30 2 1 11
+
+:script
+wait player-in-area 5 5 1 2
+move fr2 16 8 10
+move fr1 13 4 0.5
+wait player-in-area 16 5 1 2
+move fr3 1 2 15.5
+wait player-in-area 22 9 3 1
+move bh1 23 12.5 0.25
+
+:end

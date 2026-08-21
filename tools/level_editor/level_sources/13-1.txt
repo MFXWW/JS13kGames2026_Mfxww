@@ -1,0 +1,50 @@
+:map
+base empty
+solid 3 7 28 12
+empty 8 7 10 12
+empty 16 7 21 12
+empty 25 7 27 12
+
+:object
+floatrect fr1 9 7 2 6
+floatrect fr2 11 7 1 4
+floatrect fr3 8 7 1 6
+floatrect fr4 16 7 6 3
+floatrect fr5 16 10 6 3
+floatrect fr6 25 7 2 6
+destination dest1 28 6
+floatrect fr7 27 7 1 6
+
+:script
+wait player-in-area 9 5 1 1
+move fr1 9 15 0.25
+wait player-in-area 10 5 1 1
+move fr2 11 3 0.25
+wait player-in-area 8 6 1 1
+wait for-seconds 0.5
+move fr3 8 15 0.25 -block
+move fr2 3 3 0.75 -block
+move fr2 4 3 0.25 -block
+move fr2 4 7 0.5 -block
+wait player-in-area 8 6 1 1
+move fr1 9 7 0.5
+move fr3 8 7 0.5
+wait player-in-area 16 5 1 1
+move fr4 16 10 0.5 -block
+move fr4 22 7
+move fr4 16 7 1.5
+wait player-in-area 17 5 2 1
+move fr4  16 10 0.5 -block
+move fr4 22 7
+move fr4 16 7 1.5
+wait player-in-area 20 5 1 2
+move fr4 16 8 0.25 -block
+move fr4 16 7 0.25 -block
+move fr4 16 15 0.5
+move fr5 16 15 0.25
+wait player-in-area 25 5 1 1
+move fr6 23 7
+wait player-in-area 26 5 1 1
+move fr7 25 7 0.25
+
+:end

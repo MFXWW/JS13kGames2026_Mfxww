@@ -1,0 +1,29 @@
+:map
+base empty
+solid 7 5 7 8
+solid 14 5 14 8
+solid 3 0 28 0
+
+:object
+floatrect fr1 3 9 26 5
+button btn1 6 8
+button btn2 13 8
+button btn3 7 5
+button btn4 20 10
+destination dest1 27 8
+
+:script
+wait button-press btn1
+move fr1 3 5 1 -block
+wait for-seconds 1
+move fr1 3 9 1
+wait button-press btn2
+move fr1 3 1 4
+wait for-seconds 1
+move btn3 7 4 0.25
+wait button-press btn3
+move fr1 3 11 0.5
+wait button-press btn4
+move fr1 3 9 0.5
+
+:end

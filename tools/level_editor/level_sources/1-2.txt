@@ -1,0 +1,18 @@
+:map
+base empty
+solid 2 10 29 13
+empty 26 10 27 13
+
+:object
+floatrect fr1 26 10 2 4
+floatrect fr2 28 10 1 4
+destination dest1 29 9
+
+:script
+wait player-in-area 27 8 1 2
+move fr1 24 10 0.25
+wait player-in-area 27 8 1 1
+move fr2 28 6 0.25 -block
+move fr2 28 10 2
+
+:end

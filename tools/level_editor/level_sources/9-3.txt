@@ -1,0 +1,22 @@
+:map
+base empty
+
+:object
+oneway ow1 4 11 7
+oneway ow2 8 10 7
+oneway ow3 12 9 7
+oneway ow4 16 8 7
+oneway ow5 20 7 7
+floatrect fr1 3 0 24 2
+destination dest1 24 6
+destination dest2 18 8 -no-collision
+blackhole bh1 18 8 -hidden
+
+:script
+wait player-in-area 6 10 1 1
+move fr1 3 5 10
+wait player-in-area 12 8 1 1
+move dest2 13 8 3
+move bh1 13 8 3
+
+:end

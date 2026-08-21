@@ -1,0 +1,16 @@
+# IDE / 编辑器
+.idea/
+*.iml
+
+# Node
+node_modules/
+
+# 日志与临时文件
+*.log
+*.tmp
+Thumbs.db
+Desktop.ini
+
+# 构建中间产物（dist 为最终交付物，保留入库）
+*.min.js.map
+dist/ui.tmp.js

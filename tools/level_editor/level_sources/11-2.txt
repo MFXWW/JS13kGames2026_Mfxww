@@ -1,0 +1,44 @@
+:map
+base solid
+empty 2 1 29 14
+solid 2 5 27 5
+solid 4 10 29 10
+
+:object
+blackhole bh1 10 5
+bounce bn1 9 5
+button btn1 4 10
+destination dest1 25 14
+blackhole bh2 11 5
+
+:script
+wait player-in-area 9 4 1 1
+move bh1 10 4 0.25 -block
+move bn1 9 4 0.25
+
+wait player-in-area 20 3 2 2
+move bh1 30 4 3 -block
+move bh2 30 5 1
+
+wait player-in-area 23 8 2 2
+move bh1 30 9.5
+move bh1 13 9.5 3 -block
+move bh1 30 9 3
+wait for-seconds 1
+move bh2 7 14
+
+wait player-in-area 7 8 1 2
+move btn1 4 9 0.25
+wait button-press btn1
+move btn1 4 10 0.25
+move bh2 7 14.5 0.25
+
+wait player-in-area 6 13 1 2
+move bh2 6 14.5 0.25
+
+wait player-in-area 15 13 1 1
+move bh2 22 14.5 2 -block
+wait player-in-area 22 13 1 1
+move bh2 23 14.5 0.25
+
+:end
