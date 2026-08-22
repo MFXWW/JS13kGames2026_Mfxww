@@ -275,17 +275,12 @@ function player_updatePosition(dx, dy) {
     
     const fellOut = dir > 0 ? PLAYER_collision.y > GAME_mapHeight : PLAYER_collision.y + PLAYER_collision.height < 0;
     if (fellOut && !GAME_awaitingRespawn) {
-        // 王冠循环：带冠坠入虚空 → 丢冠抉择
-        if (typeof GAME_currentLevelIndex !== 'undefined' && GAME_currentLevelIndex === GAME_NORMAL_LAST_INDEX && GAME_hasCrown) {
-            gameCrownChoice();
-            return collided;
-        }
-        // 隐藏关入口：12-2跳入虚空 → corridor（触碰Dest后进13-1）
+        // 12-2跳入虚空 → corridor（带冠/无冠皆可进隐藏关；带冠抉择移师13-3）
         if (typeof GAME_currentLevelIndex !== 'undefined' && GAME_currentLevelIndex === GAME_NORMAL_LAST_INDEX) {
             gameEnterHiddenRealm();
             return collided;
         }
-        // 13-3掉出顶部 → 直接通关（轮回到1-1并获得王冠）
+        // 13-3掉出顶部 → 通关（带冠与否由 gameOnDestinationReached 决定）
         if (typeof GAME_currentLevelIndex !== 'undefined' && GAME_currentLevelIndex === GAME_HIDDEN_START_INDEX + 2) {
             gameOnDestinationReached();
             return collided;
@@ -422,8 +417,8 @@ function player_render(ctx) {
         ctx.translate(0, -cy);
     }
     ctx.drawImage(frame, drawX, drawY, drawW, drawH);
-    // 王冠（对称形状，无需随朝向镜像；重力倒置时随角色一起翻转）
-    player_renderCrown(ctx, drawX, drawY, drawW);
+    // 王冠（拿到后才画；对称形状无需随朝向镜像，重力倒置时随角色一起翻转）
+    if (GAME_hasCrown) player_renderCrown(ctx, drawX, drawY, drawW);
     ctx.restore();
 }
 

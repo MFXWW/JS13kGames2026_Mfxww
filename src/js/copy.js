@@ -12,18 +12,18 @@ const DEATH_REASONS = {
 
 /** 王冠循环逐章被同化副标题（拿冠即第二轮回，意象式线索，不点破因果；索引=章-1） */
 const CROWNED_SUBTITLES_2 = [
-    "the gold remembers a brighter morning.",
-    'the violet hums a song you almost know.',
-    'the blue recalls the shape of falling.',
-    'the red keeps a wound that never heals.',
-    "the green forgives what you haven't done.",
-    'the orange glows like a held breath.',
-    'the cyan tide keeps its promise.',
-    'the pink tastes like a name you forgot.',
-    'the sky is where the ceiling used to be.',
-    'the dust already holds your steps.',
-    'the grey is patient with your steps.',
-    'the crimson ends where it begins.',
+    'gold remembers the bright morning.',
+    'violet hums a song almost known.',
+    'blue recalls the shape of falling.',
+    'red keeps a wound that never heals.',
+    'green forgives what you did not.',
+    'orange glows like a held breath.',
+    'cyan tide keeps its promise.',
+    'pink tastes of a forgotten name.',
+    'sky where the ceiling was.',
+    'dust already holds your steps.',
+    'grey is patient with your steps.',
+    'crimson ends where it begins.',
 ];
 
 /** 过渡/切换文案 */
@@ -44,12 +44,12 @@ const COPY = {
     hiddenLabel: (part) => `THE ABANDONED PLACE — ${part}/3`,
     hiddenSub: 'Something stirs in the dark…',
     displayHidden: (part) => `The Abandoned Place ${part}/3`,
-    cycleCrowned: 'the crowned cycle begins…',
+    cycleCrowned: 'the crowned journey begins…',
     cycleKept: (n) => `the colors have a keeper. cycle ${n}.`,
     cyclePlain: 'Another cycle. That\'s the end…?',
     // 开场介绍
     introTitle: 'Fallen rainbow',
-    introBody: 'A unicorn loses the color and turned black.\nThe colors are kind. They do not ask to leave.\n\nBeyond the twelfth fall, something waits.',
+    introBody: 'I seem to forget something...\nNo matter what, I\'ve lost my colors.\nI need to find them.',
     introHint: '[ SPACE ]',
     gameTitle: 'Fallen rainbow',
 };

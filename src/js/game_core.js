@@ -198,7 +198,7 @@ let GAME_isNewCycle = false; // 通关最后一关回到第一关时标记
 let GAME_hasCrown = false;   // 打通隐藏关后获得王冠
 let GAME_crownedCycles = 0;  // 已进行的王冠轮回次数（保留=轮回+1）
 let GAME_totalDeaths = 0;    // 拿冠后的永久死亡计数（cookie 持久化）
-let GAME_crownChoicePending = false; // 12-2 虚空抉择待响应
+let GAME_crownChoicePending = false; // 13-3 丢冠抉择待响应
 let GAME_introPending = false; // 开场介绍待响应
 let GAME_endingShown = false;  // 真结局画面已展示
 let GAME_crownedKept = false;  // 玩家选择了保留王冠（坏循环）
@@ -589,6 +589,9 @@ function gameOnDestinationReached() {
     } else if (GAME_currentLevelIndex >= GAME_HIDDEN_START_INDEX) {
         if (GAME_currentLevelIndex < levels.length - 1) {
             GAME_currentLevelIndex++;
+        } else if (GAME_hasCrown) {
+            // 带冠回到13-3 → 丢冠抉择（不再重复得冠）
+            gameCrownChoice();
         } else {
             // 13-3 通关 → 轮回到 1-1，获得王冠
             GAME_currentLevelIndex = 0;
