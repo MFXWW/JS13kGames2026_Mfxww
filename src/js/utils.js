@@ -40,17 +40,33 @@ function cssColorToRGBA(colorStr) {
 }
 
 /**
+ * 单文件打包资源读取：页尾追加 [img][lvl][u16 imgLen][u16 lvlLen]（大端），一次 fetch 后切片缓存
+ */
+let GAME_assetsP = null, GAME_assetsImg = null, GAME_assetsLvl = null;
+function gameAssetsLoaded() {
+    return GAME_assetsP || (GAME_assetsP = fetch(location.href)
+        .then(r => r.arrayBuffer())
+        .then(b => {
+            const v = new DataView(b);
+            const il = v.getUint16(b.byteLength - 4, false);
+            const ll = v.getUint16(b.byteLength - 2, false);
+            const is = b.byteLength - 4 - il - ll;
+            GAME_assetsImg = b.slice(is, is + il);
+            GAME_assetsLvl = b.slice(is + il, b.byteLength - 4);
+        }));
+}
+
+/**
  * 从位压缩的 img.bin 按 rect 裁切出所有精灵帧
- * @param {string} fileName bin 文件路径
+ * @param {string} fileName bin 文件路径（单文件模式下忽略，改从页尾切片）
  * @param {string} foreground 陷阱前景色（默认）
  * @param {string} background 陷阱背景色（默认）
  * @param {object} frameRects { 名称: {x,y,w,h,fg?,bg?} }，rect 可覆盖配色
  * @returns {Promise<object>} 名称 → ImageBitmap
  */
 async function initializeSpriteFramesFromBinFile(fileName, foreground, background, frameRects) {
-    const fileResponse = await fetch(fileName);
-    if (!fileResponse.ok) throw new Error(`Failed to fetch file for ${fileName}`);
-    const view = new DataView(await fileResponse.arrayBuffer());
+    await gameAssetsLoaded();
+    const view = new DataView(GAME_assetsImg);
     // 行宽 = 最大 rect 右边界（须为 8 的倍数）
     const rowWidth = Math.max(...Object.values(frameRects).map(r => r.x + r.w));
     const rowBytes = rowWidth / 8;

@@ -1,5 +1,5 @@
 // 关卡合并工具：把 lvl/*.bin 合并为单一 lvl.bin（长度前缀 + 指针定位）
-// 每个关卡块 = [u16 大端长度][数据]，按 levels 数组顺序排列
+// 每个关卡块 = [u8 长度][数据]（单关 <256B），按 levels 数组顺序排列
 // 用法: node lvl_combine.js
 const fs = require('fs');
 const path = require('path');
@@ -35,11 +35,9 @@ for (const n of names) {
     }
     const data = fs.readFileSync(file);
     offsets.push(bytePos);
-    // u16 大端长度 + 数据
-    const lenBuf = Buffer.alloc(2);
-    lenBuf.writeUInt16BE(data.length, 0);
-    chunks.push(lenBuf, data);
-    bytePos += 2 + data.length;
+    // u8 长度前缀 + 数据
+    chunks.push(Buffer.from([data.length]), data);
+    bytePos += 1 + data.length;
 }
 
 const merged = Buffer.concat(chunks);

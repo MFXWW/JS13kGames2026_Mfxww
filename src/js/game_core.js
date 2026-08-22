@@ -287,24 +287,23 @@ function gameResizeCanvas() {
 }
 
 /**
- * 确保合并关卡 lvl.bin 已加载，并构建各关偏移表
+ * 确保合并关卡 lvl.bin 已加载（单文件：从页尾切片），并构建各关偏移表
  * @returns {Promise<ArrayBuffer>}
  */
 function gameEnsureLvlLoaded() {
     if (GAME_lvlBuffer) return Promise.resolve(GAME_lvlBuffer);
-    return fetch('lvl/lvl.bin')
-        .then((r) => { if (!r.ok) throw new Error('lvl.bin fetch failed'); return r.arrayBuffer(); })
-        .then((buf) => {
-            GAME_lvlBuffer = buf;
-            // 扫描 [u16 长度][数据] 构建偏移表（指针定位用）
+    return gameAssetsLoaded()
+        .then(() => {
+            GAME_lvlBuffer = GAME_assetsLvl;
+            // 扫描 [u8 长度][数据] 构建偏移表（指针定位用）
             GAME_lvlOffsets = [];
-            const view = new DataView(buf);
+            const view = new DataView(GAME_lvlBuffer);
             let ptr = 0;
-            while (ptr + 2 <= buf.byteLength) {
+            while (ptr + 1 <= GAME_lvlBuffer.byteLength) {
                 GAME_lvlOffsets.push(ptr);
-                ptr += 2 + view.getUint16(ptr, false);
+                ptr += 1 + view.getUint8(ptr);
             }
-            return buf;
+            return GAME_lvlBuffer;
         });
 }
 
@@ -338,8 +337,8 @@ function gameLoadLevelData(levelIndex) {
         const ptr = isFirst12_2 ? GAME_lvlOffsets[voidOffset] : GAME_lvlOffsets[levelIndex];
         GAME_levelPtr = ptr; // 存档点
         const view = new DataView(lvlBuf);
-        const len = view.getUint16(ptr, false);
-        const slice = lvlBuf.slice(ptr + 2, ptr + 2 + len);
+        const len = view.getUint8(ptr);
+        const slice = lvlBuf.slice(ptr + 1, ptr + 1 + len);
         if (!slice || slice.byteLength === 0) throw new Error(`Empty level slice for index ${levelIndex}`);
 
         GAME_backgroundColor = bg;

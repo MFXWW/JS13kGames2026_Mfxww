@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fallen rainbow</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #111;
+            color: #aaa;
+            font-family: 'Courier New', 'Consolas', monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #headerBar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 540px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 0 4px;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+        #headerBar.visible { opacity: 1; }
+
+        #gameTitle {
+            font-size: 13px;
+            letter-spacing: 2px;
+            color: #555;
+        }
+        #levelDisplay {
+            font-size: 12px;
+            letter-spacing: 1px;
+            color: #666;
+        }
+
+        #gameContainer {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #gameCanvas {
+            border: 1px solid #333;
+            background: #000;
+            z-index: 10;
+        }
+        #imageStand { display: none; }
+
+        /* death overlay */
+        #deathOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: none;
+            z-index: 100;
+            pointer-events: none;
+            background: rgba(0,0,0,0.75);
+        }
+        #deathOverlay.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #deathMessage {
+            font-size: clamp(18px, 4vw, 30px);
+            letter-spacing: 1px;
+            text-align: center;
+            color: #bbb;
+            padding: 0 20px;
+            max-width: 500px;
+            line-height: 1.6;
+            animation: fadeUp 0.5s ease-out;
+        }
+
+        #deathHint {
+            font-size: 12px;
+            letter-spacing: 3px;
+            color: #444;
+            margin-top: 30px;
+            animation: fadeUp 0.9s ease-out;
+        }
+
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translateY(6px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* transition overlay */
+        #transitionOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            z-index: 200;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        #transitionOverlay.active { opacity: 1; }
+
+        #transitionMessage {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 210;
+            pointer-events: none;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            padding: 0 20px;
+        }
+        #transitionMessage.active { opacity: 1; }
+        #transitionMessage .level-label {
+            font-size: 14px;
+            letter-spacing: 3px;
+            color: #555;
+        }
+        #transitionMessage .level-sub {
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: #333;
+            margin-top: 10px;
+        }
+        #transitionMessage .cycle-notice {
+            font-size: 13px;
+            letter-spacing: 2px;
+            color: #666;
+            margin-top: 14px;
+        }
+
+        /* crowned death counter (top-right, visible only with crown) */
+        #deathCounter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 60;
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: #999;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            pointer-events: none;
+        }
+        #deathCounter.visible { opacity: 1; }
+
+        /* crown choice overlay */
+        #crownChoiceOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: none;
+            z-index: 300;
+            pointer-events: none;
+            background: rgba(0,0,0,0.85);
+        }
+        #crownChoiceOverlay.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #crownChoiceMessage {
+            font-size: clamp(16px, 3.2vw, 24px);
+            letter-spacing: 1px;
+            text-align: center;
+            color: #ccc;
+            padding: 0 20px;
+            max-width: 520px;
+            line-height: 1.7;
+            animation: fadeUp 0.5s ease-out;
+        }
+        #crownChoiceHint {
+            font-size: 12px;
+            letter-spacing: 3px;
+            color: #666;
+            margin-top: 34px;
+            animation: fadeUp 0.9s ease-out;
+        }
+
+        /* intro overlay (first launch only) */
+        #introOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            z-index: 400;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        #introOverlay.active { opacity: 1; pointer-events: auto; }
+        #introMessage {
+            max-width: 560px;
+            padding: 0 24px;
+            text-align: center;
+            color: #aaa;
+            line-height: 1.9;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+        #introMessage .intro-title {
+            font-size: 16px;
+            letter-spacing: 4px;
+            color: #ccc;
+            margin-bottom: 22px;
+        }
+        #introMessage .intro-hint {
+            font-size: 12px;
+            letter-spacing: 3px;
+            color: #555;
+            margin-top: 34px;
+        }
+
+        /* RGB glitch overlay (shown when crown is obtained) */
+        #glitchOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 350;
+            pointer-events: none;
+            display: none;
+        }
+        #glitchOverlay.active { display: block; animation: glitchFlash 0.9s steps(2, end); }
+        #glitchOverlay .glitch-bar {
+            position: absolute;
+            left: 0; right: 0;
+            height: 6px;
+            mix-blend-mode: screen;
+        }
+        @keyframes glitchFlash {
+            0%   { background: rgba(255,0,80,0.18); }
+            20%  { background: rgba(0,255,255,0.18); }
+            40%  { background: rgba(255,255,0,0.14); }
+            60%  { background: rgba(255,0,255,0.16); }
+            80%  { background: rgba(0,255,128,0.14); }
+            100% { background: rgba(255,255,255,0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="headerBar">
+        <span id="gameTitle">Fallen rainbow</span>
+        <span id="levelDisplay">â€”</span>
+    </div>
+
+    <div id="deathCounter">deaths: 0</div>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <canvas id="imageStand"></canvas>
+    </div>
+
+    <div id="deathOverlay">
+        <div id="deathMessage"></div>
+        <div id="deathHint">[ SPACE to try again ]</div>
+    </div>
+
+    <div id="transitionOverlay"></div>
+    <div id="transitionMessage">
+        <div class="level-label"></div>
+        <div class="level-sub"></div>
+        <div class="cycle-notice"></div>
+    </div>
+
+    <div id="crownChoiceOverlay">
+        <div id="crownChoiceMessage"></div>
+        <div id="crownChoiceHint">[ LEFT ] let go   [ RIGHT ] keep it</div>
+    </div>
+
+    <div id="glitchOverlay"></div>
+
+    <div id="introOverlay">
+        <div id="introMessage">
+            <div class="intro-title"></div>
+            <div class="intro-body"></div>
+            <div class="intro-hint"></div>
+        </div>
+    </div>
+
+<script src="/src/js/copy.js"></script>
+<script src="/src/js/utils.js"></script>
+<script src="/src/js/entities.js"></script>
+
+<script src="/src/js/traps.js"></script>
+<script src="/src/js/traps/trap_bounce.js"></script>
+<script src="/src/js/traps/trap_button.js"></script>
+<script src="/src/js/traps/trap_destination.js"></script>
+<script src="/src/js/traps/trap_floatrect.js"></script>
+<script src="/src/js/traps/trap_oneway.js"></script>
+<script src="/src/js/traps/trap_blackhole.js"></script>
+
+<script src="/src/js/level_parser.js"></script>
+<script src="/src/js/ui.js"></script>
+<script src="/src/js/game_core.js"></script>
+<script src="/src/js/sound.js"></script>
+</body>
+</html><!--
+ÿø  ?ü    p        €  ?ü   pà        ‡ı  ş  0 sx           ş  ` ßÈ   8 8 8¯Å  ş pàá‹ë 8 Ş Ş Ş¨  ş sxºõ Ş 7ò 7ò 7ò«Õ  ş ßÈ‡Çu 7ò bú bú bú«Õ  ÿÿ‹è¥ƒU bú £ü £ü £ü«Õ    ğ‡Õ £üñÜñÜñÜ«Õ?ü  ÇpWŒñÜ`Ô`Ô`Ô¨ø  ƒPMŒ`Ôàtàtàt£õ
+   ĞY€àtããã P  ŒOÀMãccc¿á?ü?üŒCàc```€øş€G÷ñ`ğğğÿ?üÿÿÀL@ğ øø ø    ?üà0  øıüüıüğ?üş÷ğ }ü8àà8à@øÿÿÁ€ 8ğ0( ğ ( Gú
+ à€@  0@(>(P
+
+ à3  €0'Ä(ƒ(WŠPá‡7   €Ïjq&jT*PàÇ&  €±Â'8èØC8èØUª
+ àgD`È ‡ Á	CªhÇPÿCªhUª
+ ç÷|@H … €ÁÜ((pÜ((T*Pç÷Îx Åşğ$hàüğ$hQêPàgÊp Å  'ø 'øP
+
+ àÇŠ@ Å 0à ‚ 0à_â
+ á‡ Š@ E7 àÇ à@?üà Š` }a ÀŒ Àşøà Š  }øÁø À	ü À  ?üà ûà ø ø À| ÀŠûÍ^ø«	´” i p0Ğ  Š»­Vôª	”
+d
+7@Â€†à˜<0(@+Š»­Vô ª	”
+è>ÈfRÅAáÁa] p²8YP(‚;Î¼€4	Ar
+ˆ`
+ÍÀ±`ì€¨(;H@QËø<g¿ôÿ÷¾@C… ‚Ç
+A
+‚œ)N8R ½`ˆ2'C °ÀH(,@ c%‡T¡Hà‚jT(‡T¢xà‘~`@2Š;‡Cğ€˜ÄN€”©ÀIA`t¡°8P8@(2·ˆƒ´ AÙÁ•8Nx !9`À`€êÀX	¤ )pAô”	®f’…¥ÁAâÀ€:„øÁÏ1g¼6ü€‚d8D Lq&Ô¨L4â•IƒC  u%VT(²"Ê„vBÂû
+ 8‡˜ÈY8îÃUì#™Ö|8Qª‚  +èÓÄÁT¨0B„AJˆ>K0®È 1ŠËsÊ¦ç{†á`–ƒ	Po`DŠˆ"Â†)0p88@’3/(…´ÂÙF N…	»CÚ|Û§vöo~! å	¬•ˆa²ÀÈ²°Fµ‚¡‹ƒQ0L  Ê&È ¢a5€‚TLY(R	u cY`CL|(0€ña¿àÿóğ¨,0Ca…è0¢b ÔL- ]ÁB
+PüG4O‘ÀEŠË~_lX€ka¢¬!„6XBˆ°„ea#RÂGµ„0‘‹Q'VˆW( ¢9a((X Ì'‹“¥„ A	»bÀZ à	–€k¹å€,.£h+ŒŒ`â +8Š€eÀA:à!1pÖ¸°\h®<— 1dÈÂÀ¥e  [‹´RïF»ôQ  ­0Eq„[P>"E 2f1×2¹D—@„T`»&eŞ K€‚b	 €Ì”T&
+2S ÄÉp)S¬
+UË.å€™r€J¹€ 5O+¢0à-(@š	°gP„¥.àA€2„  !(	
+ÈC€5‚  €S‚¿äÕöº­	G  Š‡@BÅ¾IğBÃƒ< ü}Â`™H$¸
+Tñ
+
+xBC[@ˆhH“h"ÁÂ€!a@XLd¨BCÔqƒ?âD d$Ğ‚~„4!-¡
+ fğ»„#Ø‚E`  €xO8
+  Œñ Cà€pÀĞ PLm$?’ ‚Œ× Gs€"Y HßLh&F7Ó® ˆ€@b¥`„Td¬G–Fƒı  é• ¹
+	‚¤2@ÈûDš"`¸ph8.Æ*$åÂ‚À¢ DHpH{™É‡ ]…¥õ"¾´^ÑËF@'!m$0* bğ„v„-´A¹¡b 3†	„cÂ2Ğ0ŒA˜bX	@Àa
+“X 1B=0ø° 9‚øäÅ¼:§ğ‚WĞC-ˆ!ˆzTR"¡T¹	0BCºĞq¨·QDkª¡	
+(SˆáA®jSü‰†S÷¾ù¿ %E0A†
+`…Áh
+&¬n‚ 8"K€”„  $ ‚L$b3
+¢aí pî€Xx`[˜-ĞpP  &BpA\ „×
+Aì$T+Y XÕ0´AìI÷›HX¡áŒL¼ 9I‚·„!0šğ&$^!å$D‰BH˜Õ0ª“ªI‚9µj´2€<PmcŠù î'`AwÁ ;æ˜`„‡ÕÀCè fHbT>ª‚Ò3H	†$@Cê&PPÄˆÂ$] B‘ bƒù±ÖêFãP9@Š,Bæ(c€En¢ hğ«„#J)<ĞE(rL+
+¦ÁáQ¢Ø!hJ4S©
+‚£©0‘ºX 4*0‹0…GQ`…¨ı,@Â ‚Á .  ÇPâ„ÉPáŠ%pE0B†yBJ  ÔLQ•@2	ÔHj Q»¢ÄX, °¤A`!à‚À„.„*ö—©.ˆèDßD+š"@3†q$$q4$B“Š¤\*„-‰C ‡	0ğ 8xpÀYˆî’Ffmß` ’ Q‚ " Mè"›D!Î„¨&ˆ
+b¡(@A¬T% ,ÅB¹à†\˜y@Ó“H‰³„¡¢æÄĞ€k…»³êÄnäS®:@ˆ!T #8ĞDš Á1 àñ0‚p˜pŒ ¶ ‰@C€  „’%8`9a„Ô€B‚@…q(p
+¡
+Î …`ŒC£†–[p>8Â1Uƒ{Ñ.ÖJí ¡‚•"Pç€j	B`(€pR@!CJˆ3Å„ y0™˜HÂ
+!Ü B"@ˆPˆ (‡t6•Î‚ÒbYÒ"ÚLKºgŸq¢„¨J+P”¡(!ÍBPDº„ ] hè·@!:!8@Èµ“¬‚²cEAÖLv²;™dÈK ‚l™d
+Î í	AÀ9DŒ˜+0,'˜9	„ö  ¼¢ÆL9€Bƒ?ìæ¾ ù‡„ğ ğs zÁx	‚ ğ$ƒ¡P¸ Ä*W k‘€6"PnÀ!”*Òl	¤¢€€ƒğH3ùş@;€ ~ù„:±®2ûÁ\&¸(HpXàã"B†0EË„ÂÆ}¸,	R`%àAJLŒ!‰@ÂCÀàŒ`ğH08$8(C'„ƒ‚)0à Xv880EQ‡Ã±À!Àá‚ŠT8 ‰©1np¥&>N»£KD$FˆP¹
+,!Då(¼€ öàH'4Aè °…íáTd6
+=›æÈGCcãù±xT!0–	JŠ$‚@"Ad n” “'‰”#FŠ@\¨ÑD0P eA!@£¨ FTu=É#Œ>€4pgıœ×…6  Ÿ8¬7€˜4
+‚uÁ!Pj¸˜#\Œ°Y…v¡Q68›`J€PAƒ?ìçş ù‡„şóş >p$-à&cÀA;`Àt*×…@ªâ`r0À!dJØ2…BÚ@Ã)(e`  
+;

@@ -16,20 +16,13 @@ rem -O2 用约 300 次尝试调参，比默认再小一点
 call npx --no-install roadroller -O2 ..\dist\game.min.js -o ..\dist\game.rolled.js
 if errorlevel 1 goto :fail
 
-echo === [3/4] 同步运行资源并打包 zip ===
-rem 合并关卡为单一 lvl.bin（长度前缀 + 指针式加载）
+echo === [3/4] 合并关卡 + 单文件打包 zip ===
+rem 合并关卡为单一 lvl.bin（u8 长度前缀 + 指针式加载）
 node ..\tools\level_editor\lvl_combine.js
 if errorlevel 1 goto :fail
-rem 精灵图是游戏运行必需文件，从 src\assets 刷新到 dist
-copy /Y ..\src\assets\img.bin ..\dist\ >nul
-rem 用合并后的关卡文件刷新 dist\lvl（游戏按 lvl\lvl.bin 加载）
-if exist ..\dist\lvl rmdir /S /Q ..\dist\lvl
-mkdir ..\dist\lvl
-copy /Y ..\src\assets\lvl\lvl.bin ..\dist\lvl\ >nul
-rem 打包运行所需文件（不含中间产物 min.js / map；zip 放 dist 内）
-rem 用 zopfli（最优 deflate）打包，比 Compress-Archive 更小
+rem 单文件打包：内联 JS + 尾部追加 img+lvl + 打 zip
 if exist ..\dist\fallen_rainbow.zip del /Q ..\dist\fallen_rainbow.zip
-node zopfli_zip.js ..\dist\fallen_rainbow.zip
+node package_single.js
 if errorlevel 1 goto :fail
 
 echo.
