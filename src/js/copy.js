@@ -10,22 +10,6 @@ const DEATH_REASONS = {
     'SWALLOWED': 'Swallowed by the void.',
 };
 
-/** 王冠循环逐章被同化副标题（拿冠即第二轮回，意象式线索，不点破因果；索引=章-1） */
-const CROWNED_SUBTITLES_2 = [
-    'gold remembers the bright morning.',
-    'violet hums a song almost known.',
-    'blue recalls the shape of falling.',
-    'red keeps a wound that never heals.',
-    'green forgives what you did not.',
-    'orange glows like a held breath.',
-    'cyan tide keeps its promise.',
-    'pink tastes of a forgotten name.',
-    'sky where the ceiling was.',
-    'dust already holds your steps.',
-    'grey is patient with your steps.',
-    'crimson ends where it begins.',
-];
-
 /** 过渡/切换文案 */
 const COPY = {
     // 死亡提示
@@ -33,10 +17,10 @@ const COPY = {
     deathCounter: (n) => `deaths: ${n}`,
     // 王冠抉择
     choiceHint: '[ LEFT ] let go   [ RIGHT ] keep it',
-    choiceFirst: 'The void opens beneath you.\nThe crown is heavy — heavier than the world it guards.\n\nLet it fall?',
-    choiceAgain: (n) => `The void opens again.\nThe crown is lighter than it should be — you have worn it for ${n} cycles.\nIt was waiting for you. It always was.\n\nLet it fall?`,
+    choiceFirst: 'Too heavy.\nIt eats my colors. It eats my memories.\nPlace it back... Place it back...',
+    choiceAgain: (n) => `Too heavy.\nIt eats my colors. It eats my memories.\nPlace it back... Place it back...`,
     // 真结局
-    endingSub: 'A unicorn loses the color and turned black.\n\nblack is not emptiness.\nblack is where you rest.\n\nyou were never trapped in the loop.\nyou were the loop.\n\nthe crown you found was the one you let fall.\nand you let it fall, because you found it.\n\nthat was always the whole point.',
+    endingSub: 'I\'ve recalled!\nWhat I\'d forgotten was...\nthat I would forget, the colors are my memories...',
     endingCycle: 'The rainbow has been fallen.',
     // 过渡
     corridorLabel: '...',
@@ -49,7 +33,7 @@ const COPY = {
     cyclePlain: 'Another cycle. That\'s the end…?',
     // 开场介绍
     introTitle: 'Fallen rainbow',
-    introBody: 'I seem to forget something...\nNo matter what, I\'ve lost my colors.\nI need to find them.',
+    introBody: 'I\'ve forgotten...\nNope. I lost my colors.\nIt\'s time to find them...',
     introHint: '[ SPACE ]',
     gameTitle: 'Fallen rainbow',
 };

@@ -202,6 +202,7 @@ let GAME_crownChoicePending = false; // 13-3 丢冠抉择待响应
 let GAME_introPending = false; // 开场介绍待响应
 let GAME_endingShown = false;  // 真结局画面已展示
 let GAME_crownedKept = false;  // 玩家选择了保留王冠（坏循环）
+let GAME_crownMoment = false;  // 13-3 得冠瞬间定格中
 
 /** 读取 cookie 值（带 mfxww_game 标识的持久化数据） */
 function gameCookieGet(name) {
@@ -328,7 +329,6 @@ function gameLoadLevelData(levelIndex) {
         initializeSpriteFramesFromBinFile('img.bin', fg, bg, GAME_SpriteRects)
     ])
     .then(([lvlBuf, spriteCache]) => {
-        if (!spriteCache) throw new Error('Sprite frame initialization failed');
         GAME_SpriteFrameCache = spriteCache;
         PLAYER_horseCanvases = spriteCache;
 
@@ -339,12 +339,11 @@ function gameLoadLevelData(levelIndex) {
         const view = new DataView(lvlBuf);
         const len = view.getUint8(ptr);
         const slice = lvlBuf.slice(ptr + 1, ptr + 1 + len);
-        if (!slice || slice.byteLength === 0) throw new Error(`Empty level slice for index ${levelIndex}`);
 
         GAME_backgroundColor = bg;
         GAME_foregroundColor = fg;
 
-        if (!parseLevelBinaryStream(slice)) throw new Error(`No data parsed for level ${levelIndex}`);
+        parseLevelBinaryStream(slice);
 
         GAME_observingArea = null;
         GAME_blockedByMovement = false;
@@ -375,11 +374,6 @@ function gameLoadLevel(levelIndex) {
     Object.keys(actions).forEach(key => actions[key] = false);
 
     // 1. 验证关卡索引
-    if (levelIndex < 0 || levelIndex >= levels.length) {
-        console.error('gameLoadLevel: Invalid level index');
-        return;
-    }
-
     const levelData = levels[levelIndex];
     // 标记关卡切换中
     GAME_levelTransitioning = true;
@@ -399,10 +393,6 @@ function gameLoadLevel(levelIndex) {
                 uiOff(GAME_transitionOverlay);
                 uiVis(GAME_headerBar, true);
             }, 400);
-        })
-        .catch((error) => {
-            console.error('gameLoadLevel: Failed to load level:', error.message);
-            GAME_levelTransitioning = false;
         });
 }
 
@@ -440,10 +430,6 @@ function gameStepScript() {
             case 2: // for-seconds
                 GAME_waitTimer = BinaryReader_readBits2SingleFloatNumber(6) * 1000 + Date.now();
                 break;
-            default:
-                console.warn('gameStepScript: Unknown or unimplemented wait event type:', eventType);
-                GAME_waitingForEvent = -1;
-                break;
         }
     }
     return true;
@@ -470,10 +456,6 @@ function gameCheckEvent() {
             }
             break;
         case -1: // 无等待
-            break;
-        default:
-            console.warn('gameCheckEvent: Unknown or unimplemented wait event type:', GAME_waitingForEvent);
-            GAME_waitingForEvent = -1;
             break;
     }
 }
@@ -512,6 +494,7 @@ function gameLoop() {
  * @param {number} deltaTime 帧间隔（秒）
  */
 function gameTick(deltaTime) {
+    if (GAME_crownMoment) return; // 得冠瞬间定格（仅渲染，逻辑暂停）
     player_tick(deltaTime);
     
     // 陷阱更新
@@ -567,10 +550,9 @@ function gameOnDestinationReached() {
     sfx(660, 0.45, 0.18, 0, 0.5);
     sfx(880, 0.5, 0.25, 0, 0.5, 0, 0, 120);
     sfx(1100, 0.35, 0.35, 3, 0.3, 0, 0, 260);
-    // console.clear();
-    
+
     // 避免重复切换关卡
-    if (GAME_levelTransitioning) {
+    if (GAME_levelTransitioning || GAME_crownMoment) {
         return;
     }
 
@@ -593,7 +575,8 @@ function gameOnDestinationReached() {
             // 带冠回到13-3 → 丢冠抉择（不再重复得冠）
             gameCrownChoice();
         } else {
-            // 13-3 通关 → 轮回到 1-1，获得王冠
+            // 13-3 通关 → 获得王冠，短暂定格展示戴冠瞬间，再轮回
+            const sp = levels[GAME_currentLevelIndex].playerSpawn;
             GAME_currentLevelIndex = 0;
             GAME_isNewCycle = true;
             GAME_hasCrown = true;
@@ -606,6 +589,11 @@ function gameOnDestinationReached() {
             sfx(659, 0.35, 0.18, 0, 0.5, 0, 0, 130);
             sfx(784, 0.4, 0.25, 0, 0.5, 0, 0.2, 260);
             sfx(1047, 0.3, 0.5, 3, 0.3, 0, 0, 400);
+            // 王冠瞬间：回到出生点定格戴冠（王冠色相循环闪动 + 琶音），随后轮回
+            GAME_crownMoment = true;
+            player_setPosition(sp.x, sp.y);
+            setTimeout(() => { GAME_crownMoment = false; gameLoadLevel(0); }, 800);
+            return; // 跳过底部立即转场
         }
     } else {
         GAME_currentLevelIndex++;
@@ -764,13 +752,7 @@ function gameBeginTransition(levelIndex) {
         sfx(98, 0.12, 0.6, 3, 0.25);
     } else {
         GAME_transitionLabel.textContent = gameLevelDisplayName(levelIndex);
-        // 王冠循环逐章被同化副标题（拿冠即第二轮回，用循环感文案）
-        if (GAME_hasCrown && levelIndex <= GAME_NORMAL_LAST_INDEX) {
-            const chapter = Math.ceil(levels[levelIndex].id / 3) - 1;
-            GAME_transitionSub.textContent = CROWNED_SUBTITLES_2[chapter] || '';
-        } else {
-            GAME_transitionSub.textContent = '';
-        }
+        GAME_transitionSub.textContent = '';
     }
 
     // 轮回提示
@@ -805,11 +787,7 @@ function gameRetry() {
     uiOff(GAME_deathOverlay);
     GAME_levelTransitioning = true;
 
-    gameLoadLevelData(GAME_currentLevelIndex)
-        .catch((error) => {
-            console.error('gameRetry: Failed to reload level:', error.message);
-            GAME_levelTransitioning = false;
-        });
+    gameLoadLevelData(GAME_currentLevelIndex);
 }
 
 /**
@@ -868,14 +846,10 @@ function gameInit() {
     }
 
     // 加载初始关卡（玩家帧随 img.bin 一并载入）
-    gameLoadLevel(35);
+    gameLoadLevel(0);
 }
 
 // 页面加载完成后初始化游戏
 window.addEventListener('load', () => {
-    try {
-        gameInit();
-    } catch (e) {
-        console.error('Failed to start game:', e);
-    }
+    gameInit();
 });

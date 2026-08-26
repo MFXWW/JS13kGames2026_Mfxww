@@ -33,7 +33,10 @@ wait player-in-area 26 7 1 1
 move fr3 26 8 0.25 -block
 move bh2 27 7 1 -block
 wait for-seconds 3
-move bh2 4 7 6
+move bh2 4 7 4
 move fr3 2 13 1
+
+wait player-in-area 23 11 1 2
+move bh1 23 12.5 0.25
 
 :end

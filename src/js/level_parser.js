@@ -17,13 +17,8 @@ function BinaryReader_init(arrayBuffer) {
 /**
  * 读取1个比特位
  * @returns {string} '0' 或 '1'
- * @throws {Error} 数据读取到末尾时抛出错误
  */
 function BinaryReader_readBit() {
-    if (BR_byteOffset >= BR_data.length) {
-        throw new Error('End of data reached');
-    }
-
     const byte = BR_data[BR_byteOffset];
     const bit = (byte >> (7 - BR_bitOffset)) & 1;
     
@@ -81,8 +76,7 @@ let LP_currentScriptIndex = 0;
  * @returns {boolean} 解析是否成功
  */
 function parseLevelBinaryStream(arrayBuffer) {
-    try {
-        BinaryReader_init(arrayBuffer);
+    BinaryReader_init(arrayBuffer);
         trapManagerClear();
         trapManagerInitializeTrapClasses();
 
@@ -135,9 +129,6 @@ function parseLevelBinaryStream(arrayBuffer) {
                 case 5: // oneway — 只有宽度，高度固定1格
                     createOneway(objIndex, BinaryReader_readBits(5), BinaryReader_readBits(4), BinaryReader_readBits(6));
                     break;
-                default:
-                    console.warn(`  Unknown object type: ${objType}`);
-                    break;
             }
             // 所有类型末尾统一读取 hidden(1) + noCollision(1)
             const trap = TRAP_instances[objIndex];
@@ -151,8 +142,4 @@ function parseLevelBinaryStream(arrayBuffer) {
         LP_scriptInstructionCount = BinaryReader_readBits(7);
         LP_currentScriptIndex = 0;
         return true;
-    } catch (error) {
-        console.error('parseLevelBinaryStream: Error parsing level file:', error.message);
-        return false;
-    }
 }
