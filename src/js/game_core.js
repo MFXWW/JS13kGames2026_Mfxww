@@ -188,6 +188,7 @@ let GAME_currentLevelIndex = 0;
 let GAME_rafId = null; // RAF ID
 let GAME_levelTransitioning = false; // 关卡切换标记
 let GAME_lastTime = 0; // 上一帧时间
+let GAME_lastVW = 0, GAME_lastVH = 0; // 视口尺寸缓存（画布适配）
 
 // theme
 let GAME_backgroundColor = '#000000';
@@ -477,6 +478,12 @@ function gameStart() {
  */
 function gameLoop() {
     if (GAME_levelTransitioning) return;
+    // 视口变化即重算画布（覆盖嵌入/小窗不触发 resize 的情况）
+    if (innerWidth !== GAME_lastVW || innerHeight !== GAME_lastVH) {
+        GAME_lastVW = innerWidth;
+        GAME_lastVH = innerHeight;
+        gameResizeCanvas();
+    }
     
     if (!GAME_paused) {
         const now = performance.now();
