@@ -249,8 +249,6 @@ function player_updatePosition(dx, dy) {
             if (!overlaps) continue;
             if (dir > 0 ? prevY + PLAYER_collision.height <= tc.y + 0.01
                         : prevY >= tc.y + tc.height - 0.01) {
-                // TEST-ONLY: 记录接住（问题解决后删除）
-                debugLog('catch', { id: trap.id, tcY: +tc.y.toFixed(4), foot: +(pc.y + pc.height).toFixed(4), vy: +PLAYER_vy.toFixed(3) });
                 PLAYER_collision.y = dir > 0 ? tc.y - PLAYER_collision.height : tc.y + tc.height;
                 PLAYER_vy = 0;
                 collided = true;

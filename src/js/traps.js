@@ -72,8 +72,6 @@ function trapSetMovement(id, args) {
 
   GAME_blockedByMovement = !!args[4];
   if (args[4]) trap.og = true;
-  // TEST-ONLY: 记录 -block 设置（问题解决后删除）
-  debugLog('block-set', { id, block: !!args[4], fx: args[1], fy: args[2], d: args[3], og: !!trap.og });
 
   if (!duration || duration <= 0) {
     trap.c.x = targetX;
@@ -191,8 +189,6 @@ function platformMoveAxis(id, movement, progress, axis) {
     // 玩家下落快于下降平台、正从上方穿过 → 不推（避免瞬移到下方）；被平台压（vy=0）仍 push 压死
     if (axis === 'y' && trap.mv * dir > 0 && PLAYER_vy * dir > 0) return totalDA;
     const onTop = dir > 0 ? playerBottom <= trapSurface + 0.05 : playerBottom >= trapSurface - 0.05;
-    // TEST-ONLY: 记录推动判定（问题解决后删除）
-    debugLog('push', { id, axis, mv: trap.mv, frameDA: +frameDA.toFixed(4), playerY: +PLAYER_collision.y.toFixed(4), vy: +PLAYER_vy.toFixed(3), foot: +playerBottom.toFixed(4), surface: +trapSurface.toFixed(4), onTop, skipVy: !!(axis === 'y' && trap.mv * dir > 0 && PLAYER_vy * dir > 0), push: !onTop });
     if (!onTop) {
       player_onPushed(trap.c, trap[dirKey], axis, axis === 'x' ? 'SQUEEZED' : 'SQUASHED');
     }
@@ -220,8 +216,6 @@ function trapFinishMovement(id, progress) {
   const trap = TRAP_instances[id];
   const wasBlock = !!(trap.m && trap.m.b);
   trap.m = null;
-  // TEST-ONLY: 记录 -block 解除（问题解决后删除）
-  debugLog('block-clear', { id, wasBlock });
   if (wasBlock) GAME_blockedByMovement = false;
 }
 
