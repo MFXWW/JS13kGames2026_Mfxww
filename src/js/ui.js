@@ -37,6 +37,20 @@ function uiInit() {
     GAME_introBody = document.querySelector('#introMessage .intro-body');
     GAME_introHint = document.querySelector('#introMessage .intro-hint');
     GAME_glitchOverlay = document.getElementById('glitchOverlay');
+
+    // 触屏虚拟按键（仅 pointer:coarse 设备显示）；兼处理 UI 状态，与键盘逻辑一致
+    const tc = document.getElementById('touchControls');
+    ['left', 'right', 'jump'].forEach((a, i) => {
+        const el = tc.children[i];
+        const go = (on) => {
+            if (!on) return actions[a] = false;
+            if (GAME_introPending) return gameIntroDismiss();
+            if (GAME_awaitingRespawn) return gameRetry();
+            actions[a] = true;
+        };
+        el.addEventListener('pointerdown', (e) => { e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch (_) {} go(true); });
+        el.addEventListener('pointerup', () => go(false));
+    });
 }
 
 /** 切换元素 active class：on=true 显示/加，false 隐藏/去 */

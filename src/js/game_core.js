@@ -318,9 +318,9 @@ function gameLoadLevelData(levelIndex) {
     const levelData = levels[levelIndex];
     // 双 12-2：无王冠首次到 12-2 用强制坠落版（必进隐藏关），有王冠用正常版
     const isFirst12_2 = levelIndex === GAME_NORMAL_LAST_INDEX && !GAME_hasCrown;
-    // 王冠循环：普通关按进度褪色
+    // 王冠循环：普通关按进度褪色（假设 13-3 为最后一关，缩小褪色峰值；隐藏关保持黑白）
     const isNormal = levelIndex >= 0 && levelIndex <= GAME_NORMAL_LAST_INDEX;
-    const fade = GAME_hasCrown && isNormal ? levelIndex / GAME_NORMAL_LAST_INDEX : 0;
+    const fade = GAME_hasCrown && isNormal ? levelIndex / (GAME_HIDDEN_START_INDEX + 2) : 0;
     const bg = fade > 0 ? desaturateColor(levelData.backgroundColor, fade) : (levelData.backgroundColor || '#000000');
     const fg = fade > 0 ? desaturateColor(levelData.foregroundColor, fade) : (levelData.foregroundColor || '#ffffff');
 
@@ -358,6 +358,8 @@ function gameLoadLevelData(levelIndex) {
         player_setPosition(spawn.x, spawn.y);
 
         GAME_levelTransitioning = false;
+        // BGM：单曲循环
+        bgmPlay('0.3.7.5.3.0.7.9', 220, 160, 3);
         gameStart();
     });
 }
@@ -625,6 +627,7 @@ function gameCrownChoice() {
     if (GAME_crownChoicePending) return;
     GAME_crownChoicePending = true;
     GAME_paused = true;
+    bgmStop();
     // 轮回次数越多，抉择文案越接近真相
     if (GAME_crownedCycles > 0) {
         GAME_crownChoiceMessage.textContent = COPY.choiceAgain(GAME_crownedCycles + 1);
@@ -639,6 +642,7 @@ function gameCrownChoice() {
 function gameCrownReturn() {
     if (!GAME_crownChoicePending) return;
     GAME_crownChoicePending = false;
+    bgmStop();
     GAME_hasCrown = false;
     GAME_crownedKept = false;
     uiOff(GAME_crownChoiceOverlay);
@@ -697,6 +701,7 @@ function gameIntroDismiss() {
 function gameKillPlayer(reason) {
     if (GAME_awaitingRespawn) return; // 防止死亡后重复触发
     GAME_awaitingRespawn = true;
+    bgmStop();
     GAME_blackHoleSuck = null; // 吸入动画已结束，清理状态
 
     // 按死亡原因播放不同音效
@@ -747,7 +752,10 @@ function gameBeginTransition(levelIndex) {
     } else if (levelIndex >= GAME_HIDDEN_START_INDEX) {
         const hiddenPart = levelIndex - GAME_HIDDEN_START_INDEX + 1;
         GAME_transitionLabel.textContent = COPY.hiddenLabel(hiddenPart);
-        GAME_transitionSub.textContent = COPY.hiddenSub;
+        // 带冠进入 13-1 展示褪色终局文案
+        GAME_transitionSub.textContent = (GAME_hasCrown && levelIndex === GAME_HIDDEN_START_INDEX)
+            ? COPY.hiddenCrownedSub
+            : COPY.hiddenSub;
         sfx(130, 0.2, 0.45, 0, 0.35, 65);
         sfx(98, 0.12, 0.6, 3, 0.25);
     } else {

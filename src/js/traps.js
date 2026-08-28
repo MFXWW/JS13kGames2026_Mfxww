@@ -72,6 +72,8 @@ function trapSetMovement(id, args) {
 
   GAME_blockedByMovement = !!args[4];
   if (args[4]) trap.og = true;
+  // TEST-ONLY: 记录 -block 设置（问题解决后删除）
+  debugLog('block-set', { id, block: !!args[4], fx: args[1], fy: args[2], d: args[3], og: !!trap.og });
 
   if (!duration || duration <= 0) {
     trap.c.x = targetX;
@@ -84,7 +86,8 @@ function trapSetMovement(id, args) {
       tx: targetX,
       ty: targetY,
       d: duration,
-      e: 0
+      e: 0,
+      b: !!args[4] // b = 本次移动是否 -block（阻塞脚本）
     };
     // 机关开始移动时播放音效
     sfx(200, 0.15, 0.1, 3, 0.4, 300);
@@ -141,24 +144,6 @@ function player_isStandingOnTrap(trapCollision) {
 }
 
 /**
- * 玩家跟随平台移动（沿指定轴），排除指定的 floatrect
- * @param {number} frameDelta 本帧位移量
- * @param {string} axis 坐标轴 'x' 或 'y'
- * @param {object|null} excludeTrap 要排除的陷阱碰撞体（不检测与其碰撞）
- */
-function player_followPlatform(frameDelta, axis, excludeTrap) {
-  if (frameDelta === 0) return;
-  PLAYER_collision[axis] += frameDelta;
-  // 检查瓦片碰撞 + 其他 floatrect 碰撞（排除自身的碰撞体）
-  const hitFloatrect = TRAP_floatRect_group.some(
-    t => t !== excludeTrap && !t.n && collideRect(PLAYER_collision, t.c)
-  );
-  if (player_checkCollision() || hitFloatrect) {
-    PLAYER_collision[axis] -= frameDelta;
-  }
-}
-
-/**
  * 陷阱沿指定轴移动（水平/垂直共用）
  * @param {string/number} id 陷阱ID
  * @param {object} movement 移动状态对象
@@ -190,20 +175,24 @@ function platformMoveAxis(id, movement, progress, axis) {
 
   if (frameDA === 0 || trap.n) return totalDA;
 
-  // 纵向移动携带站在上面的玩家（升降平台）
-  if (axis === 'y' && player_isStandingOnTrap(trap.c)) {
-    player_followPlatform(frameDA, axis, trap);
-    return totalDA;
-  }
-
-  // 撞到玩家：站在顶上的不带动（平台从脚下移走），侧面的推开/挤死
+  // 撞到玩家：上下/横向推动；站在顶上的不带动（玩家自然下坠），侧面的推开/挤死
   // oneway 为单向平台：横向可穿行不推动，纵向仍可推动
   const dirKey = axis === 'x' ? 'mh' : 'mv';
   if (!GAME_awaitingRespawn && !(trap.t === 'oneway' && axis === 'x') && trap[dirKey] !== 0 && trapCheckCollisionWithPlayer(id)) {
     const dir = PLAYER_gravityDir;
     const playerBottom = dir > 0 ? PLAYER_collision.y + PLAYER_collision.height : PLAYER_collision.y;
     const trapSurface = dir > 0 ? trap.c.y : trap.c.y + trap.c.height;
+    // 上升平台把站在顶上的玩家精确托起（对齐平台顶部），避免反复 push/抖动
+    if (axis === 'y' && trap.mv * dir < 0 && (dir > 0 ? playerBottom <= trapSurface + 0.5 : playerBottom >= trapSurface - 0.5)) {
+      PLAYER_collision.y = dir > 0 ? trapSurface - PLAYER_collision.height : trapSurface + PLAYER_collision.height;
+      PLAYER_vy = 0;
+      return totalDA;
+    }
+    // 玩家下落快于下降平台、正从上方穿过 → 不推（避免瞬移到下方）；被平台压（vy=0）仍 push 压死
+    if (axis === 'y' && trap.mv * dir > 0 && PLAYER_vy * dir > 0) return totalDA;
     const onTop = dir > 0 ? playerBottom <= trapSurface + 0.05 : playerBottom >= trapSurface - 0.05;
+    // TEST-ONLY: 记录推动判定（问题解决后删除）
+    debugLog('push', { id, axis, mv: trap.mv, frameDA: +frameDA.toFixed(4), playerY: +PLAYER_collision.y.toFixed(4), vy: +PLAYER_vy.toFixed(3), foot: +playerBottom.toFixed(4), surface: +trapSurface.toFixed(4), onTop, skipVy: !!(axis === 'y' && trap.mv * dir > 0 && PLAYER_vy * dir > 0), push: !onTop });
     if (!onTop) {
       player_onPushed(trap.c, trap[dirKey], axis, axis === 'x' ? 'SQUEEZED' : 'SQUASHED');
     }
@@ -229,8 +218,11 @@ function trapAdvanceMovement(id, dt) {
 function trapFinishMovement(id, progress) {
   if (progress < 1) return;
   const trap = TRAP_instances[id];
+  const wasBlock = !!(trap.m && trap.m.b);
   trap.m = null;
-  if (trap.og) GAME_blockedByMovement = false;
+  // TEST-ONLY: 记录 -block 解除（问题解决后删除）
+  debugLog('block-clear', { id, wasBlock });
+  if (wasBlock) GAME_blockedByMovement = false;
 }
 
 /**

@@ -252,6 +252,25 @@
             80%  { background: rgba(0,255,128,0.14); }
             100% { background: rgba(255,255,255,0); }
         }
+
+        /* touch controls (mobile only) */
+        #touchControls {
+            position: fixed;
+            inset: auto 20px 18px 14px;
+            z-index: 450;
+            display: none;
+            touch-action: none;
+        }
+        #touchControls button {
+            width: 60px; height: 60px;
+            margin: 0 14px 0 0;
+            border-radius: 50%;
+            background: #fff1;
+            color: #fffa;
+        }
+        #touchControls button:nth-child(3) { margin-left: auto; }
+        #touchControls button:active { background: #fff4; }
+        @media (pointer: coarse) { #touchControls { display: flex; } }
     </style>
 </head>
 <body>
@@ -294,6 +313,8 @@
             <div class="intro-hint"></div>
         </div>
     </div>
+
+    <div id="touchControls"><button>◀</button><button>▶</button><button>▲</button></div>
 
 <script src="js/copy.js"></script>
 <script src="js/utils.js"></script>

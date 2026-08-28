@@ -151,6 +151,18 @@ function player_isOnGround() {
 }
 
 /**
+ * 玩家脚底（重力方向）正下方是否有瓦片（不含平台/单向板）
+ * @returns {boolean}
+ */
+function player_hasTileBelowFeet() {
+    const dir = PLAYER_gravityDir;
+    const bottom = dir > 0 ? PLAYER_collision.y + PLAYER_collision.height : PLAYER_collision.y;
+    const probeY = dir > 0 ? bottom + 0.0625 : bottom - 0.0625;
+    return gamemap_hasTile(Math.floor(PLAYER_collision.x), Math.floor(probeY))
+        || gamemap_hasTile(Math.floor(PLAYER_collision.x + PLAYER_collision.width), Math.floor(probeY));
+}
+
+/**
  * 玩家被平台推动（替代原onPushedHorizontally/Vertically方法）
  * @param {object} perpetratorCollision - 推动者碰撞体
  * @param {number} direction - 推动方向
@@ -225,6 +237,8 @@ function player_updatePosition(dx, dy) {
         const TOLERANCE = 1 / GAME_tileSize; // 匹配瓦片 Math.floor 的 1 像素容差
         for (const trap of TRAP_floatRect_group) {
             if (trap.n) continue;
+            // 玩家脚底下方已有不动 tile（站在其它地面）→ 不接住，避免被拉进 tile
+            if (player_hasTileBelowFeet()) continue;
             // 用容差检测：玩家在重力方向的表面附近也算碰撞
             const pc = PLAYER_collision;
             const tc = trap.c;
@@ -235,6 +249,8 @@ function player_updatePosition(dx, dy) {
             if (!overlaps) continue;
             if (dir > 0 ? prevY + PLAYER_collision.height <= tc.y + 0.01
                         : prevY >= tc.y + tc.height - 0.01) {
+                // TEST-ONLY: 记录接住（问题解决后删除）
+                debugLog('catch', { id: trap.id, tcY: +tc.y.toFixed(4), foot: +(pc.y + pc.height).toFixed(4), vy: +PLAYER_vy.toFixed(3) });
                 PLAYER_collision.y = dir > 0 ? tc.y - PLAYER_collision.height : tc.y + tc.height;
                 PLAYER_vy = 0;
                 collided = true;

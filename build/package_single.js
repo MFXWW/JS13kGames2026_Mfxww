@@ -56,7 +56,7 @@ function dosDateTime(d) {
     return [time & 0xffff, date & 0xffff];
 }
 function deflateOne(raw) {
-    if (zopfli) return zopfli.deflateAsync(raw, { numiterations: 15 });
+    if (zopfli) return zopfli.deflateAsync(raw, { numiterations: 30 });
     return Promise.resolve(zlib.deflateSync(raw, { level: 9 }));
 }
 

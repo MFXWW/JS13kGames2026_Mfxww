@@ -69,3 +69,20 @@ function sfx(f, a, u, w, s, e, p, d) {
     const go = () => playSound(f, a, u, p || 0, ['sine', 'square', 'sawtooth', 'triangle'][w], o);
     d ? setTimeout(go, d) : go();
 }
+
+// ============ 极简循环 BGM（零外部文件，setInterval 音序器） ============
+let bgmT = null, bgmI = 0, bgmN = [], bgmR = 220, bgmW = 0, bgmS = 160;
+
+/** 启动循环背景音乐。seq: 数字=半音度数(0=根音)，'.'=休止；root=基频Hz；step=每步ms；wave 0-3 */
+function bgmPlay(s, r, t, w) {
+    bgmStop();
+    bgmN = [...s].map(c => c === '.' ? 0 : +c);
+    bgmR = r; bgmW = w; bgmS = t; bgmI = 0;
+    bgmTick();
+    bgmT = setInterval(bgmTick, t);
+}
+function bgmTick() {
+    const d = bgmN[bgmI++ % bgmN.length];
+    if (d) sfx(bgmR * Math.pow(2, d / 12), 0.07, bgmS * 8.5e-4, bgmW);
+}
+function bgmStop() { if (bgmT) { clearInterval(bgmT); bgmT = null; } }

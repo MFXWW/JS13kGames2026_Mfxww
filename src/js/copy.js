@@ -17,23 +17,24 @@ const COPY = {
     deathCounter: (n) => `deaths: ${n}`,
     // 王冠抉择
     choiceHint: '[ LEFT ] let go   [ RIGHT ] keep it',
-    choiceFirst: 'Too heavy.\nIt eats my colors. It eats my memories.\nPlace it back... Place it back...',
+    choiceFirst: 'It\'s heavy.\n。。。\nMy colors are fading. My memories are fading.\nPlace it back... Place it back...',
     choiceAgain: (n) => `Too heavy.\nIt eats my colors. It eats my memories.\nPlace it back... Place it back...`,
     // 真结局
-    endingSub: 'I\'ve recalled!\nWhat I\'d forgotten was...\nthat I would forget, the colors are my memories...',
+    endingSub: 'I remember now.\nWhat I forgot was that I forget.\nThe colors are my memories...',
     endingCycle: 'The rainbow has been fallen.',
     // 过渡
     corridorLabel: '...',
     corridorSub: '???',
     hiddenLabel: (part) => `THE ABANDONED PLACE — ${part}/3`,
     hiddenSub: 'Something stirs in the dark…',
+    hiddenCrownedSub: 'When all the colors fade away, then black and white stay forever.',
     displayHidden: (part) => `The Abandoned Place ${part}/3`,
     cycleCrowned: 'the crowned journey begins…',
     cycleKept: (n) => `the colors have a keeper. cycle ${n}.`,
     cyclePlain: 'Another cycle. That\'s the end…?',
     // 开场介绍
     introTitle: 'Fallen rainbow',
-    introBody: 'I\'ve forgotten...\nNope. I lost my colors.\nIt\'s time to find them...',
+    introBody: 'I\'ve forgotten...\n\tNope. The truth is, my colors are lost.\nIt\'s time to find them...',
     introHint: '[ SPACE ]',
     gameTitle: 'Fallen rainbow',
 };

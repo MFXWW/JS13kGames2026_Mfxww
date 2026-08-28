@@ -11,8 +11,9 @@ const lvl = fs.readFileSync(path.join(ROOT, 'src', 'assets', 'lvl', 'lvl.bin'));
 const out = path.join(__dirname, '_verify', 'index.html');
 fs.mkdirSync(path.dirname(out), { recursive: true });
 
-// 改脚本路径为绝对（/src/js/...），便于从 /build/_verify/ 加载
-let page = html.replace(/<script src="(js\/[^"]+)"><\/script>/g, '<script src="/src/$1"></script>');
+// 改脚本路径为绝对（/src/js/...），便于从 /build/_verify/ 加载；加时间戳绕过浏览器缓存
+const cb = Date.now();
+let page = html.replace(/<script src="(js\/[^"]+)"><\/script>/g, `<script src="/src/$1?v=${cb}"></script>`);
 
 // 追加数据（与 package_single.js 相同格式：`<!--\n` + img + lvl + footer）
 const footer = Buffer.alloc(4);
