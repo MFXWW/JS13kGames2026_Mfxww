@@ -9,6 +9,7 @@ let GAME_transitionLabel = null, GAME_transitionSub = null, GAME_transitionCycle
 let GAME_deathCounter = null, GAME_crownChoiceOverlay = null, GAME_crownChoiceMessage = null, GAME_crownChoiceHint = null;
 let GAME_introOverlay = null, GAME_introMessage = null, GAME_introTitle = null, GAME_introBody = null, GAME_introHint = null;
 let GAME_glitchOverlay = null;
+let GAME_muteMark = null;
 
 /** 一次性获取所有 UI 元素引用（gameInit 调用） */
 function uiInit() {
@@ -37,6 +38,7 @@ function uiInit() {
     GAME_introBody = document.querySelector('#introMessage .intro-body');
     GAME_introHint = document.querySelector('#introMessage .intro-hint');
     GAME_glitchOverlay = document.getElementById('glitchOverlay');
+    GAME_muteMark = document.getElementById('muteMark');
 
     // 触屏虚拟按键（仅 pointer:coarse 设备显示）；兼处理 UI 状态，与键盘逻辑一致
     const tc = document.getElementById('touchControls');

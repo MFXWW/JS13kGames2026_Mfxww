@@ -16,6 +16,12 @@ const keyMappings = {
 };
 
 document.addEventListener('keydown', (e) => {
+    // M 键静音切换
+    if (e.key === 'm' || e.key === 'M') {
+        GAME_muted = !GAME_muted;
+        uiVis(GAME_muteMark, GAME_muted);
+        return;
+    }
     // 开场介绍：空格开始
     if (GAME_introPending) {
         e.preventDefault();

@@ -160,6 +160,19 @@
         }
         #deathCounter.visible { opacity: 1; }
 
+        /* mute indicator (top-left, M toggles) */
+        #muteMark {
+            position: fixed;
+            top: 20px; left: 20px;
+            z-index: 60;
+            font-size: 13px;
+            color: #999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        #muteMark.visible { opacity: 1; }
+
         /* crown choice overlay */
         #crownChoiceOverlay {
             position: fixed;
@@ -282,6 +295,8 @@
 
     <div id="deathCounter">deaths: 0</div>
 
+    <div id="muteMark">â™ª</div>
+
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         <canvas id="imageStand"></canvas>
@@ -316,22 +331,22 @@
 
     <div id="touchControls"><button>â—€</button><button>â–¶</button><button>â–²</button></div>
 
-<script src="/src/js/copy.js?v=1787908181756"></script>
-<script src="/src/js/utils.js?v=1787908181756"></script>
-<script src="/src/js/entities.js?v=1787908181756"></script>
+<script src="/src/js/copy.js?v=1787982298852"></script>
+<script src="/src/js/utils.js?v=1787982298852"></script>
+<script src="/src/js/entities.js?v=1787982298852"></script>
 
-<script src="/src/js/traps.js?v=1787908181756"></script>
-<script src="/src/js/traps/trap_bounce.js?v=1787908181756"></script>
-<script src="/src/js/traps/trap_button.js?v=1787908181756"></script>
-<script src="/src/js/traps/trap_destination.js?v=1787908181756"></script>
-<script src="/src/js/traps/trap_floatrect.js?v=1787908181756"></script>
-<script src="/src/js/traps/trap_oneway.js?v=1787908181756"></script>
-<script src="/src/js/traps/trap_blackhole.js?v=1787908181756"></script>
+<script src="/src/js/traps.js?v=1787982298852"></script>
+<script src="/src/js/traps/trap_bounce.js?v=1787982298852"></script>
+<script src="/src/js/traps/trap_button.js?v=1787982298852"></script>
+<script src="/src/js/traps/trap_destination.js?v=1787982298852"></script>
+<script src="/src/js/traps/trap_floatrect.js?v=1787982298852"></script>
+<script src="/src/js/traps/trap_oneway.js?v=1787982298852"></script>
+<script src="/src/js/traps/trap_blackhole.js?v=1787982298852"></script>
 
-<script src="/src/js/level_parser.js?v=1787908181756"></script>
-<script src="/src/js/ui.js?v=1787908181756"></script>
-<script src="/src/js/game_core.js?v=1787908181756"></script>
-<script src="/src/js/sound.js?v=1787908181756"></script>
+<script src="/src/js/level_parser.js?v=1787982298852"></script>
+<script src="/src/js/ui.js?v=1787982298852"></script>
+<script src="/src/js/game_core.js?v=1787982298852"></script>
+<script src="/src/js/sound.js?v=1787982298852"></script>
 </body>
 </html><!--
 ÿø  ?ü    p        €  ?ü   pà        ‡ý  þ  0 sx           þ  ` ßÈ   8 8 8¯Å  þ pàá‹ë 8 Þ Þ Þ¨  þ sxºõ Þ 7ò 7ò 7ò«Õ  þ ßÈ‡Çu 7ò bú bú bú«Õ  ÿÿ‹è¥ƒU bú £ü £ü £ü«Õ    ð‡Õ £üñÜñÜñÜ«Õ?ü  ÇpWŒñÜ`Ô`Ô`Ô¨ø  ƒPMŒ`Ôàtàtàt£õ

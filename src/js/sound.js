@@ -1,5 +1,6 @@
 // Public audio context
 let audioContext = null;
+let GAME_muted = false; // 静音开关（M 键切换）
 
 /**
  * Play a sound with custom parameters using Web Audio API
@@ -17,6 +18,7 @@ let audioContext = null;
  * @param {number} [opts.detune]  - Detune in cents for slight chorus (default 0)
  */
 async function playSound(frequency, amplitude, duration, pan, waveType, opts) {
+    if (GAME_muted) return;
     if (!audioContext) {
       const AudioContextConstructor = window.AudioContext;
       audioContext = new AudioContextConstructor();

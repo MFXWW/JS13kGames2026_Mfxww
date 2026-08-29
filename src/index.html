@@ -160,6 +160,19 @@
         }
         #deathCounter.visible { opacity: 1; }
 
+        /* mute indicator (top-left, M toggles) */
+        #muteMark {
+            position: fixed;
+            top: 20px; left: 20px;
+            z-index: 60;
+            font-size: 13px;
+            color: #999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        #muteMark.visible { opacity: 1; }
+
         /* crown choice overlay */
         #crownChoiceOverlay {
             position: fixed;
@@ -281,6 +294,8 @@
     </div>
 
     <div id="deathCounter">deaths: 0</div>
+
+    <div id="muteMark">♪</div>
 
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
