@@ -99,11 +99,11 @@ const levels = (function() {
         [2, 2], [3, 12], [5, 6], 
         // 8章 ×2
         [3, 10], [9, 7],
-        // 9章 ×3 (9-3 待做)
+        // 9章 ×3 
         [3, 9], [4, 12], [5, 9],
-        // 10章 ×2 (待做)
+        // 10章 ×2 
         [3, 12], [3, 1],
-        // 11章 ×2 (待做)
+        // 11章 ×2 
         [3, 3], [4, 3],
         // 12章 ×2
         [23, 11], [1, 10],
@@ -365,8 +365,8 @@ function gameLoadLevelData(levelIndex) {
         player_setPosition(spawn.x, spawn.y);
 
         GAME_levelTransitioning = false;
-        // BGM：单曲循环
-        bgmPlay('0.3.7.5.3.0.7.9', 220, 160, 3);
+        // BGM：四小节循环（AABA），A 小调，每小节 8 步
+        bgmPlay('0357535.0357535.5795375.0357530.', 220, 190, 3);
         gameStart();
     });
 }
