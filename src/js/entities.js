@@ -368,6 +368,12 @@ function player_renderCrown(ctx, drawX, drawY, drawW) {
             ctx.fillRect(px + x * scale, py + y * scale, scale, scale);
         }
     }
+    // 王冠光晕：冠周一圈随色相脉动的辉光（呼应颜色=记忆主题）
+    ctx.globalAlpha = 0.4 + 0.35 * Math.sin(t * 9);
+    ctx.strokeStyle = `hsl(${hue}, 100%, 70%)`;
+    ctx.lineWidth = scale;
+    ctx.strokeRect(px - scale, py - scale, crownW + 2 * scale, crownH + 2 * scale);
+    ctx.globalAlpha = 1;
 }
 
 /**

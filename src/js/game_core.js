@@ -15,13 +15,11 @@ const keyMappings = {
     'ArrowUp': 'jump',
 };
 
+// ============ DEBUG 开关（开发/验证用） ============
+// 构建时 terser_compile.bat 用 --define DEBUG=false 把 DEBUG 分支整块剔除，正式产物不含此功能。
+const DEBUG = true;
+
 document.addEventListener('keydown', (e) => {
-    // M 键静音切换
-    if (e.key === 'm' || e.key === 'M') {
-        GAME_muted = !GAME_muted;
-        uiVis(GAME_muteMark, GAME_muted);
-        return;
-    }
     // 开场介绍：空格开始
     if (GAME_introPending) {
         e.preventDefault();
@@ -50,6 +48,12 @@ document.addEventListener('keydown', (e) => {
         gameKillPlayer('SUICIDE');
         return;
     }
+    // DEBUG: N 键跳下一关（仅 DEBUG 构建；正式构建由 --define 剔除）
+    if (DEBUG && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        gameLoadLevel((GAME_currentLevelIndex + 1) % levels.length);
+        return;
+    }
     if (GAME_awaitingRespawn && (e.key === ' ' || e.code === 'Space')) {
         gameRetry();
         return;
@@ -64,6 +68,12 @@ document.addEventListener('keyup', (e) => {
     const action = keyMappings[e.key];
     if (action) actions[action] = false;
 });
+
+/** 静音按钮：切换静音并更新角标样式 */
+function gameToggleMute() {
+    GAME_muted = !GAME_muted;
+    uiVis(GAME_muteMark, GAME_muted);
+}
 
 // ==================== 关卡定义（1-7章×3 + 8章×2 + 9章×3 + 10-12章×2 + 走廊 + 隐藏章×3 = 39关） ====================
 // 第13章 "The Abandoned Place" 为隐藏区：12-2坠落 → corridor → 触碰Dest → 13-1
@@ -210,6 +220,7 @@ let GAME_introPending = false; // 开场介绍待响应
 let GAME_endingShown = false;  // 真结局画面已展示
 let GAME_crownedKept = false;  // 玩家选择了保留王冠（坏循环）
 let GAME_crownMoment = false;  // 13-3 得冠瞬间定格中
+let GAME_deathAt = 0;          // 死亡时刻（死亡 glitch 时长基准）
 
 /** 读取 cookie 值（带 mfxww_game 标识的持久化数据） */
 function gameCookieGet(name) {
@@ -365,8 +376,9 @@ function gameLoadLevelData(levelIndex) {
         player_setPosition(spawn.x, spawn.y);
 
         GAME_levelTransitioning = false;
-        // BGM：四小节循环（AABA），A 小调，每小节 8 步
-        bgmPlay('0357535.0357535.5795375.0357530.', 220, 190, 3);
+        // 零散音符环境乐：无冠 A 小调五声音阶；带冠诡异变奏（全音阶+saw+低八度+随机失谐）
+        const crowned = GAME_hasCrown;
+        bgmPlay(crowned ? '0.2.4.6.8.10' : '0.3.5.7.10', crowned ? 110 : 220, crowned ? 2200 : 1600, crowned ? 3 : 0, crowned ? 15 : 0);
         gameStart();
     });
 }
@@ -514,8 +526,7 @@ function gameTick(deltaTime) {
     
     // 陷阱更新
     trapManagerTick(deltaTime);
-    
-    // 黑洞尾迹粒子更新
+    // 黑洞尾迹推进（死亡期间也继续缩小动画）
     blackHoleTrailTick(deltaTime);
     
     // 指令执行
@@ -535,6 +546,8 @@ function gameTick(deltaTime) {
     }
 }
 
+/** 视差远景（已移除：本作无相机、前景不移动，错层背景无意义） */
+
 /**
  * 渲染帧（替代原 render 方法）
  * 世界（背景+陷阱+地形）以 GAME_worldScale 渲染到离屏画布，角色以原生像素尺寸叠加
@@ -547,8 +560,8 @@ function gameRender() {
     wctx.fillRect(0, 0, GAME_worldCanvas.width, GAME_worldCanvas.height);
     wctx.setTransform(GAME_worldScale, 0, 0, GAME_worldScale, 0, 0);
     trapManagerRender(wctx);
-    gamemap_render(wctx);
     blackHoleTrailRender(wctx);
+    gamemap_render(wctx);
     renderRingExplosion(wctx);
     // 迁移像素化世界图到可见画布（1:1，保持锐利）
     GAME_ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -556,6 +569,17 @@ function gameRender() {
     GAME_ctx.drawImage(GAME_worldCanvas, 0, 0);
     // 角色按原生像素尺寸绘制在可见画布上
     player_render(GAME_ctx);
+    // 死亡 glitch：死亡瞬间世界画面水平错位闪烁（渐弱）
+    if (GAME_awaitingRespawn) {
+        const t = (performance.now() - GAME_deathAt) / 1000;
+        if (t < 0.35) {
+            const c = GAME_worldCanvas;
+            for (let i = 5; i--;) {
+                const y = i * 256;
+                GAME_ctx.drawImage(c, 0, y, c.width, 260, Math.sin(t * 70 + i * 3) * 90 | 0, y, c.width, 260);
+            }
+        }
+    }
 }
 
 /**
@@ -714,7 +738,8 @@ function gameIntroDismiss() {
 function gameKillPlayer(reason) {
     if (GAME_awaitingRespawn) return; // 防止死亡后重复触发
     GAME_awaitingRespawn = true;
-    bgmStop();
+    GAME_deathAt = performance.now(); // 死亡时刻（供死亡 glitch 渐弱）
+    bgmStop(0.6); // BGM 短时淡出而非骤停
     GAME_blackHoleSuck = null; // 吸入动画已结束，清理状态
 
     // 按死亡原因播放不同音效

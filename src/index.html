@@ -33,254 +33,70 @@
             z-index: 50;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.6s ease;
+            transition: opacity .6s ease;
         }
         #headerBar.visible { opacity: 1; }
+        #gameTitle { font-size: 13px; letter-spacing: 2px; color: #555; }
+        #levelDisplay { font-size: 12px; letter-spacing: 1px; color: #555; }
 
-        #gameTitle {
-            font-size: 13px;
-            letter-spacing: 2px;
-            color: #555;
-        }
-        #levelDisplay {
-            font-size: 12px;
-            letter-spacing: 1px;
-            color: #666;
-        }
-
-        #gameContainer {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #gameCanvas {
-            border: 1px solid #333;
-            background: #000;
-            z-index: 10;
-        }
+        #gameContainer { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #gameCanvas { border: 1px solid #333; background: #000; z-index: 10; }
         #imageStand { display: none; }
 
-        /* death overlay */
-        #deathOverlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: none;
-            z-index: 100;
-            pointer-events: none;
-            background: rgba(0,0,0,0.75);
-        }
-        #deathOverlay.active {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+        /* 全屏覆盖层共用定位 */
+        #deathOverlay, #transitionOverlay, #crownChoiceOverlay, #introOverlay, #glitchOverlay { position: fixed; inset: 0; pointer-events: none; }
+        #deathOverlay { display: none; z-index: 100; background: rgba(0,0,0,.75); }
+        #crownChoiceOverlay { display: none; z-index: 300; background: rgba(0,0,0,.85); }
+        #transitionOverlay { background: #000; z-index: 200; opacity: 0; transition: opacity .4s ease; }
+        #introOverlay { background: #000; z-index: 400; opacity: 0; transition: opacity .5s ease; }
+        #glitchOverlay { z-index: 350; display: none; }
+        /* 覆盖层居中布局 */
+        #deathOverlay.active, #crownChoiceOverlay.active, #introOverlay { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #transitionOverlay.active { opacity: 1; }
+        #introOverlay.active { opacity: 1; pointer-events: auto; }
+        #glitchOverlay.active { display: block; animation: glitchFlash .9s steps(2, end); }
 
-        #deathMessage {
-            font-size: clamp(18px, 4vw, 30px);
-            letter-spacing: 1px;
-            text-align: center;
-            color: #bbb;
-            padding: 0 20px;
-            max-width: 500px;
-            line-height: 1.6;
-            animation: fadeUp 0.5s ease-out;
-        }
-
-        #deathHint {
-            font-size: 12px;
-            letter-spacing: 3px;
-            color: #444;
-            margin-top: 30px;
-            animation: fadeUp 0.9s ease-out;
-        }
+        /* 消息/提示统一字号与动画 */
+        #deathMessage, #crownChoiceMessage { text-align: center; padding: 0 20px; animation: fadeUp .5s ease-out; }
+        #deathMessage { font-size: clamp(18px, 4vw, 30px); max-width: 500px; line-height: 1.6; color: #ccc; }
+        #crownChoiceMessage { font-size: clamp(16px, 3.2vw, 24px); max-width: 520px; line-height: 1.7; color: #ccc; }
+        #deathHint, #crownChoiceHint, #introMessage .intro-hint { font-size: 12px; letter-spacing: 3px; }
+        #deathHint, #crownChoiceHint { animation: fadeUp .9s ease-out; }
+        #deathHint { margin-top: 30px; color: #555; }
+        #crownChoiceHint { margin-top: 34px; color: #555; }
 
         @keyframes fadeUp {
             0% { opacity: 0; transform: translateY(6px); }
             100% { opacity: 1; transform: translateY(0); }
         }
 
-        /* transition overlay */
-        #transitionOverlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: #000;
-            z-index: 200;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-        #transitionOverlay.active { opacity: 1; }
-
-        #transitionMessage {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 210;
-            pointer-events: none;
-            text-align: center;
-            opacity: 0;
-            transition: opacity 0.6s ease;
-            padding: 0 20px;
-        }
+        #transitionMessage { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 210; pointer-events: none; text-align: center; opacity: 0; transition: opacity .6s ease; padding: 0 20px; }
         #transitionMessage.active { opacity: 1; }
-        #transitionMessage .level-label {
-            font-size: 14px;
-            letter-spacing: 3px;
-            color: #555;
-        }
-        #transitionMessage .level-sub {
-            font-size: 11px;
-            letter-spacing: 2px;
-            color: #333;
-            margin-top: 10px;
-        }
-        #transitionMessage .cycle-notice {
-            font-size: 13px;
-            letter-spacing: 2px;
-            color: #666;
-            margin-top: 14px;
-        }
+        #transitionMessage .level-label { font-size: 14px; letter-spacing: 3px; color: #555; }
+        #transitionMessage .level-sub { font-size: 11px; letter-spacing: 2px; margin-top: 10px; color: #555; }
+        #transitionMessage .cycle-notice { font-size: 13px; letter-spacing: 2px; margin-top: 14px; color: #555; }
 
-        /* crowned death counter (top-right, visible only with crown) */
-        #deathCounter {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 60;
-            font-size: 12px;
-            letter-spacing: 2px;
-            color: #999;
-            opacity: 0;
-            transition: opacity 0.6s ease;
-            pointer-events: none;
-        }
+        #deathCounter { position: absolute; top: 8px; right: 10px; z-index: 60; font-size: 12px; letter-spacing: 2px; color: #999; opacity: 0; transition: opacity .6s ease; pointer-events: none; }
         #deathCounter.visible { opacity: 1; }
 
-        /* mute indicator (top-left, M toggles) */
-        #muteMark {
-            position: fixed;
-            top: 20px; left: 20px;
-            z-index: 60;
-            font-size: 13px;
-            color: #999;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-        }
-        #muteMark.visible { opacity: 1; }
+        #muteMark { position: fixed; top: 20px; left: 20px; z-index: 500; color: #ccc; }
+        #muteMark.visible { color: #f88; }
 
-        /* crown choice overlay */
-        #crownChoiceOverlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: none;
-            z-index: 300;
-            pointer-events: none;
-            background: rgba(0,0,0,0.85);
-        }
-        #crownChoiceOverlay.active {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        #crownChoiceMessage {
-            font-size: clamp(16px, 3.2vw, 24px);
-            letter-spacing: 1px;
-            text-align: center;
-            color: #ccc;
-            padding: 0 20px;
-            max-width: 520px;
-            line-height: 1.7;
-            animation: fadeUp 0.5s ease-out;
-        }
-        #crownChoiceHint {
-            font-size: 12px;
-            letter-spacing: 3px;
-            color: #666;
-            margin-top: 34px;
-            animation: fadeUp 0.9s ease-out;
-        }
+        #introMessage { max-width: 560px; padding: 0 24px; text-align: center; line-height: 1.9; font-size: 14px; letter-spacing: 1px; }
+        #introMessage .intro-title { font-size: 16px; letter-spacing: 4px; margin-bottom: 22px; color: #ccc; }
+        #introMessage .intro-hint { margin-top: 34px; color: #555; }
 
-        /* intro overlay (first launch only) */
-        #introOverlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: #000;
-            z-index: 400;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-        }
-        #introOverlay.active { opacity: 1; pointer-events: auto; }
-        #introMessage {
-            max-width: 560px;
-            padding: 0 24px;
-            text-align: center;
-            color: #aaa;
-            line-height: 1.9;
-            font-size: 14px;
-            letter-spacing: 1px;
-        }
-        #introMessage .intro-title {
-            font-size: 16px;
-            letter-spacing: 4px;
-            color: #ccc;
-            margin-bottom: 22px;
-        }
-        #introMessage .intro-hint {
-            font-size: 12px;
-            letter-spacing: 3px;
-            color: #555;
-            margin-top: 34px;
-        }
-
-        /* RGB glitch overlay (shown when crown is obtained) */
-        #glitchOverlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 350;
-            pointer-events: none;
-            display: none;
-        }
-        #glitchOverlay.active { display: block; animation: glitchFlash 0.9s steps(2, end); }
-        #glitchOverlay .glitch-bar {
-            position: absolute;
-            left: 0; right: 0;
-            height: 6px;
-            mix-blend-mode: screen;
-        }
         @keyframes glitchFlash {
-            0%   { background: rgba(255,0,80,0.18); }
-            20%  { background: rgba(0,255,255,0.18); }
-            40%  { background: rgba(255,255,0,0.14); }
-            60%  { background: rgba(255,0,255,0.16); }
-            80%  { background: rgba(0,255,128,0.14); }
+            0%   { background: rgba(255,0,80,.18); }
+            20%  { background: rgba(0,255,255,.18); }
+            40%  { background: rgba(255,255,0,.14); }
+            60%  { background: rgba(255,0,255,.16); }
+            80%  { background: rgba(0,255,128,.14); }
             100% { background: rgba(255,255,255,0); }
         }
 
-        /* touch controls (mobile only) */
-        #touchControls {
-            position: fixed;
-            inset: auto 20px 18px 14px;
-            z-index: 450;
-            display: none;
-            touch-action: none;
-        }
-        #touchControls button {
-            width: 60px; height: 60px;
-            margin: 0 14px 0 0;
-            border-radius: 50%;
-            background: #fff1;
-            color: #fffa;
-        }
+        #touchControls { position: fixed; inset: auto 20px 18px 14px; z-index: 450; display: none; touch-action: none; }
+        #touchControls button { width: 60px; height: 60px; margin: 0 14px 0 0; border-radius: 50%; background: #fff1; color: #fffa; }
         #touchControls button:nth-child(3) { margin-left: auto; }
         #touchControls button:active { background: #fff4; }
         @media (pointer: coarse) { #touchControls { display: flex; } }
@@ -293,13 +109,12 @@
         <span id="levelDisplay">—</span>
     </div>
 
-    <div id="deathCounter">deaths: 0</div>
-
     <div id="muteMark">♪</div>
 
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         <canvas id="imageStand"></canvas>
+        <div id="deathCounter">deaths: 0</div>
     </div>
 
     <div id="deathOverlay">

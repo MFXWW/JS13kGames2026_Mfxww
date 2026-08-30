@@ -362,7 +362,7 @@ function trapManagerClear() {
   TRAP_floatRect_group = [];
   // 重置OneWay组
   TRAP_oneway_group = [];
-  // 清空黑洞尾迹
+  // 黑洞尾迹
   GAME_blackHoleTrail = [];
 }
 

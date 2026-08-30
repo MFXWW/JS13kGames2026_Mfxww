@@ -3,11 +3,11 @@
 
 /** 死亡原因文本映射 */
 const DEATH_REASONS = {
-    'FALLEN': 'Found the bottom.',
-    'SQUEEZED': 'Squeezed to death.',
-    'SQUASHED': 'Squashed flat.',
+    'FALLEN': 'Hit the bottom.',
+    'SQUEEZED': 'Squeezed.',
+    'SQUASHED': 'Squashed.',
     'SUICIDE': 'Gave up.',
-    'SWALLOWED': 'Swallowed by the void.',
+    'SWALLOWED': 'Swallowed.',
 };
 
 /** 过渡/切换文案 */
@@ -17,21 +17,21 @@ const COPY = {
     deathCounter: (n) => `deaths: ${n}`,
     // 王冠抉择
     choiceHint: '[ LEFT ] let go   [ RIGHT ] keep it',
-    choiceFirst: 'It\'s heavy.\n。。。\nMy colors are fading. My memories are fading.\nPlace it back... Place it back...',
-    choiceAgain: (n) => `Too heavy.\nIt eats my colors. It eats my memories.\nPlace it back... Place it back...`,
+    choiceFirst: 'It\'s heavy...\nMy colors and memories fade.\nPut it back...',
+    choiceAgain: (n) => `Too heavy.\nIt eats my colors and memories.\nPut it back...`,
     // 真结局
     endingSub: 'I remember now.\nWhat I forgot was that I forget.\nThe colors are my memories...',
-    endingCycle: 'The rainbow has been fallen.',
+    endingCycle: 'The rainbow has fallen.',
     // 过渡
     corridorLabel: '...',
     corridorSub: '???',
     hiddenLabel: (part) => `THE ABANDONED PLACE — ${part}/3`,
     hiddenSub: 'Something stirs in the dark…',
-    hiddenCrownedSub: 'When all the colors fade away, then black and white stay forever.',
+    hiddenCrownedSub: 'When colors fade, black and white remain.',
     displayHidden: (part) => `The Abandoned Place ${part}/3`,
     cycleCrowned: 'the crowned journey begins…',
     cycleKept: (n) => `the colors have a keeper. cycle ${n}.`,
-    cyclePlain: 'Another cycle. That\'s the end…?',
+    cyclePlain: 'Another cycle. The end…?',
     // 开场介绍
     introTitle: 'Fallen rainbow',
     introBody: 'I\'ve forgotten...\n\tNope. The truth is, my colors are lost.\nIt\'s time to find them...',

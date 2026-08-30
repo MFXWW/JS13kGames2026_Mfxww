@@ -1,6 +1,6 @@
 // Public audio context
 let audioContext = null;
-let GAME_muted = false; // 静音开关（M 键切换）
+let GAME_muted = false; // 静音开关（左上 ♪ 按钮切换）
 
 /**
  * Play a sound with custom parameters using Web Audio API
@@ -59,6 +59,7 @@ async function playSound(frequency, amplitude, duration, pan, waveType, opts) {
 
     oscillator.start(t);
     oscillator.stop(t + duration);
+    return gainNode;
 }
 
 /**
@@ -72,19 +73,35 @@ function sfx(f, a, u, w, s, e, p, d) {
     d ? setTimeout(go, d) : go();
 }
 
-// ============ 极简循环 BGM（零外部文件，setInterval 音序器） ============
-let bgmT = null, bgmI = 0, bgmN = [], bgmR = 220, bgmW = 0, bgmS = 160;
+// ============ 零散音符环境乐（零外部文件，单一定时器随机间隔） ============
+let bgmT = null, bgmG = null, bgmI = 0, bgmN = [], bgmR = 220, bgmW = 0, bgmS = 1600, bgmD = 0;
 
-/** 启动循环背景音乐。seq: 数字=半音度数(0=根音)，'.'=休止；root=基频Hz；step=每步ms；wave 0-3 */
-function bgmPlay(s, r, t, w) {
+/** 启动背景乐。seq: 数字=半音度数(0=根音)，'.'忽略；root=基频Hz；gap=间隔基准ms；wave 0-3；d=随机失谐(cent, 0=无)。音符随机间隔(1.5~5.5×gap)逐个轻声播放，一轮播完停顿(4~10×gap)后乱序重播 */
+function bgmPlay(s, r, t, w, d) {
     bgmStop();
-    bgmN = [...s].map(c => c === '.' ? 0 : +c);
-    bgmR = r; bgmW = w; bgmS = t; bgmI = 0;
+    bgmN = s.split('.').map(Number);
+    bgmR = r; bgmW = w; bgmS = t; bgmD = d; bgmI = 0;
+    bgmShuffle();
     bgmTick();
-    bgmT = setInterval(bgmTick, t);
+}
+function bgmShuffle() {
+    for (let i = bgmN.length - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        [bgmN[i], bgmN[j]] = [bgmN[j], bgmN[i]];
+    }
 }
 function bgmTick() {
-    const d = bgmN[bgmI++ % bgmN.length];
-    if (d) sfx(bgmR * Math.pow(2, d / 12), 0.07, bgmS * 8.5e-4, bgmW);
+    if (bgmI >= bgmN.length) {
+        bgmI = 0;
+        bgmShuffle();
+        bgmT = setTimeout(bgmTick, bgmS * (4 + Math.random() * 6)); // 一轮后长停顿
+        return;
+    }
+    const f = bgmR * Math.pow(2, bgmN[bgmI++] / 12);
+    playSound(f, 0.05, 2.8, 0, ['sine', 'square', 'sawtooth', 'triangle'][bgmW], { attack: 0.25, release: 1.4, detune: bgmD && (Math.random() * 2 - 1) * bgmD }).then(g => bgmG = g); // 缓入缓出，加长音符；带冠随机失谐；记录增益供死亡淡出
+    bgmT = setTimeout(bgmTick, bgmS * (1.5 + Math.random() * 4));
 }
-function bgmStop() { if (bgmT) { clearInterval(bgmT); bgmT = null; } }
+function bgmStop(f) {
+    if (bgmT) { clearTimeout(bgmT); bgmT = null; }
+    if (f && bgmG) { const t = audioContext.currentTime; bgmG.gain.cancelScheduledValues(t); bgmG.gain.linearRampToValueAtTime(0, t + f); }
+}

@@ -53,6 +53,8 @@ function uiInit() {
         el.addEventListener('pointerdown', (e) => { e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch (_) {} go(true); });
         el.addEventListener('pointerup', () => go(false));
     });
+    // 静音按钮（取代 M 键）
+    GAME_muteMark.addEventListener('click', gameToggleMute);
 }
 
 /** 切换元素 active class：on=true 显示/加，false 隐藏/去 */

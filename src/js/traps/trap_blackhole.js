@@ -6,39 +6,8 @@
 let GAME_ringBlast = null;
 /** 黑洞吸入动画状态（玩家被逐渐吸入洞心） */
 let GAME_blackHoleSuck = null;
-/** 黑洞移动尾迹粒子（逐渐变小的空心正方形） */
-let GAME_blackHoleTrail = [];
-const BLACKHOLE_TRAIL_INTERVAL = 0.05;  // 生成间隔（秒）
-const BLACKHOLE_TRAIL_DURATION = 0.45;  // 粒子持续（秒）
-const BLACKHOLE_TRAIL_HALF = 6;         // 初始半边长（逻辑像素，worldScale 下放大）
-
-/** 在路径上生成一个尾迹粒子 */
-function spawnBlackHoleTrail(cx, cy) {
-    GAME_blackHoleTrail.push({ x: cx, y: cy, life: 0, duration: BLACKHOLE_TRAIL_DURATION, half: BLACKHOLE_TRAIL_HALF });
-}
-
-/** 推进尾迹粒子（逐渐变小） */
-function blackHoleTrailTick(dt) {
-    for (let i = GAME_blackHoleTrail.length - 1; i >= 0; i--) {
-        const p = GAME_blackHoleTrail[i];
-        p.life += dt;
-        if (p.life >= p.duration) { GAME_blackHoleTrail.splice(i, 1); continue; }
-        p.half = BLACKHOLE_TRAIL_HALF * (1 - p.life / p.duration);
-    }
-}
-
-/** 渲染尾迹粒子（空心正方形边框） */
-function blackHoleTrailRender(ctx) {
-    ctx.fillStyle = GAME_foregroundColor;
-    for (const p of GAME_blackHoleTrail) {
-        const h = p.half;
-        const x0 = p.x - h, y0 = p.y - h, d = h * 2;
-        ctx.fillRect(x0, y0, d, 1);
-        ctx.fillRect(x0, y0 + d - 1, d, 1);
-        ctx.fillRect(x0, y0, 1, d);
-        ctx.fillRect(x0 + d - 1, y0, 1, d);
-    }
-}
+/** 移动尾迹：空心方粒 */
+let GAME_blackHoleTrail = []; // 移动尾迹：空心方粒
 
 /**
  * 在指定像素位置生成坍缩环
@@ -115,6 +84,28 @@ function blackHoleOnCollidedWithPlayer(id) {
 }
 
 /**
+ * 黑洞移动尾迹：空心方粒，随寿命缩小（世界层逻辑px，与黑洞同色）
+ */
+function spawnBlackHoleTrail(cx, cy) { GAME_blackHoleTrail.push({ x: cx, y: cy, h: 7, t: 0, d: .45 }); }
+function blackHoleTrailTick(dt) {
+  for (let i = GAME_blackHoleTrail.length - 1; i >= 0; i--) {
+    const p = GAME_blackHoleTrail[i];
+    if ((p.t += dt) >= p.d) GAME_blackHoleTrail.splice(i, 1);
+  }
+}
+function blackHoleTrailRender(ctx) {
+  ctx.fillStyle = GAME_foregroundColor;
+  for (const p of GAME_blackHoleTrail) {
+    const h = Math.round(p.h * (1 - p.t / p.d));
+    if (h <= 0) continue;
+    ctx.fillRect(p.x - h, p.y - h, h * 2, 1);
+    ctx.fillRect(p.x - h, p.y + h, h * 2, 1);
+    ctx.fillRect(p.x - h, p.y - h, 1, h * 2);
+    ctx.fillRect(p.x + h, p.y - h, 1, h * 2);
+  }
+}
+
+/**
  * BlackHole帧更新逻辑
  * @param {string/number} id 陷阱ID
  * @param {number} dt 帧间隔时间
@@ -122,27 +113,18 @@ function blackHoleOnCollidedWithPlayer(id) {
 function blackHoleTick(id, dt) {
   const trap = TRAP_instances[id];
   if (!trap) return;
-  // 记录移动前位置，移动时生成尾迹
-  const px = trap.c.x, py = trap.c.y;
+  // 移动时生成空心方粒拖尾
+  const px0 = trap.c.x, py0 = trap.c.y;
   trapBaseTick(id, dt);
-  const dx = trap.c.x - px, dy = trap.c.y - py;
-  // 隐藏黑洞移动时不生成尾迹
-  if (dx * dx + dy * dy > 1e-6 && !trap.h) {
-    trap.trailT = (trap.trailT || 0) + dt;
-    if (trap.trailT >= BLACKHOLE_TRAIL_INTERVAL) {
-      trap.trailT = 0;
-      // 粒子中心与黑洞精灵中心对齐（精灵绘制于 c.x*tileSize，中心 +tileSize/2）
-      spawnBlackHoleTrail(
-        trap.c.x * GAME_tileSize + GAME_tileSize / 2,
-        trap.c.y * GAME_tileSize + GAME_tileSize / 2
-      );
+  if (px0 !== trap.c.x || py0 !== trap.c.y) {
+    trap.tt = (trap.tt || 0) + dt;
+    while (trap.tt >= .1) {
+      trap.tt -= .1;
+      spawnBlackHoleTrail((trap.c.x + trap.c.width / 2) * GAME_tileSize, (trap.c.y + trap.c.height / 2) * GAME_tileSize);
     }
-  } else {
-    trap.trailT = 0;
   }
   // 已吞没不再更新（吸入动画期间继续脉动）
   if (trap.e && !GAME_blackHoleSuck) return;
-
   // 帧动画逻辑（黑洞脉动 / 吸积闪烁：1→2→1镜→2镜）
   trap.ft += dt;
   if (trap.ft >= trap.fi) {
