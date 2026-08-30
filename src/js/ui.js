@@ -48,6 +48,7 @@ function uiInit() {
             if (!on) return actions[a] = false;
             if (GAME_introPending) return gameIntroDismiss();
             if (GAME_awaitingRespawn) return gameRetry();
+            if (GAME_crownChoicePending) return a[0] == 'l' ? gameCrownReturn() : a[0] == 'r' && gameCrownKeep();
             actions[a] = true;
         };
         el.addEventListener('pointerdown', (e) => { e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch (_) {} go(true); });
