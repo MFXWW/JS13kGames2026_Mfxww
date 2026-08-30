@@ -219,6 +219,7 @@ let GAME_crownChoicePending = false; // 13-3 丢冠抉择待响应
 let GAME_introPending = false; // 开场介绍待响应
 let GAME_endingShown = false;  // 真结局画面已展示
 let GAME_crownedKept = false;  // 玩家选择了保留王冠（坏循环）
+let GAME_crownedFirstDone = false; // 首次拿冠回归 1-1 已展示（区分 cycleCrowned/cycleKept）
 let GAME_crownMoment = false;  // 13-3 得冠瞬间定格中
 let GAME_deathAt = 0;          // 死亡时刻（死亡 glitch 时长基准）
 
@@ -667,7 +668,7 @@ function gameCrownChoice() {
     bgmStop();
     // 轮回次数越多，抉择文案越接近真相
     if (GAME_crownedCycles > 0) {
-        GAME_crownChoiceMessage.textContent = COPY.choiceAgain(GAME_crownedCycles + 1);
+        GAME_crownChoiceMessage.textContent = COPY.choiceAgain;
     } else {
         GAME_crownChoiceMessage.textContent = COPY.choiceFirst;
     }
@@ -714,6 +715,7 @@ function gameRestartAfterEnding() {
     GAME_hasCrown = false;
     GAME_crownedKept = false;
     GAME_crownedCycles = 0;
+    GAME_crownedFirstDone = false;
     GAME_isNewCycle = false;
     GAME_paused = false;
     uiOff(GAME_transitionOverlay);
@@ -804,13 +806,14 @@ function gameBeginTransition(levelIndex) {
     // 轮回提示
     if (GAME_isNewCycle) {
         if (GAME_hasCrown) {
-            // 拿冠后第一次回 1-1 播放 RGB 故障（"不对劲"强信号）
-            if (!GAME_crownedKept && GAME_crownedCycles === 0 && levelIndex === 0) {
+            // 首次拿冠回归：cycleCrowned + RGB 故障；之后带冠轮回一律 keeper 文案
+            if (!GAME_crownedFirstDone) {
+                GAME_crownedFirstDone = true;
                 window.setTimeout(gamePlayGlitch, 400);
+                GAME_transitionCycle.textContent = COPY.cycleCrowned;
+            } else {
+                GAME_transitionCycle.textContent = COPY.cycleKept(GAME_crownedCycles + 1);
             }
-            GAME_transitionCycle.textContent = GAME_crownedKept
-                ? COPY.cycleKept(GAME_crownedCycles + 1)
-                : COPY.cycleCrowned;
         } else {
             GAME_transitionCycle.textContent = COPY.cyclePlain;
         }

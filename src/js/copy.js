@@ -17,8 +17,8 @@ const COPY = {
     deathCounter: (n) => `deaths: ${n}`,
     // 王冠抉择
     choiceHint: '[ LEFT ] let go   [ RIGHT ] keep it',
-    choiceFirst: 'It\'s heavy...\nMy colors and memories fade.\nPut it back...',
-    choiceAgain: (n) => `Too heavy.\nIt eats my colors and memories.\nPut it back...`,
+    choiceFirst: 'Wow, It\'s heavy...\nBut I can feel it sucking my colors,\nMaybe that\'s why it becomes heavier.',
+    choiceAgain: 'Too heavy.\nIt eats my colors and memories.\nPut it back...',
     // 真结局
     endingSub: 'I remember now.\nWhat I forgot was that I forget.\nThe colors are my memories...',
     endingCycle: 'The rainbow has fallen.',
