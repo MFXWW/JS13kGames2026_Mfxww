@@ -113,10 +113,10 @@ function blackHoleTrailRender(ctx) {
 function blackHoleTick(id, dt) {
   const trap = TRAP_instances[id];
   if (!trap) return;
-  // 移动时生成空心方粒拖尾
+  // 移动时生成空心方粒拖尾（隐藏黑洞不生成，避免暴露位置）
   const px0 = trap.c.x, py0 = trap.c.y;
   trapBaseTick(id, dt);
-  if (px0 !== trap.c.x || py0 !== trap.c.y) {
+  if (!trap.h && (px0 !== trap.c.x || py0 !== trap.c.y)) {
     trap.tt = (trap.tt || 0) + dt;
     while (trap.tt >= .1) {
       trap.tt -= .1;

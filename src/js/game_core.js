@@ -26,10 +26,10 @@ document.addEventListener('keydown', (e) => {
         if (e.key === ' ' || e.code === 'Space') gameIntroDismiss();
         return;
     }
-    // 真结局：R 重开
+    // 真结局：SPACE 进入开头叙述（循环即为结局）
     if (GAME_endingShown) {
         e.preventDefault();
-        if (e.key === 'r' || e.key === 'R') gameRestartAfterEnding();
+        if (e.key === ' ' || e.code === 'Space') gameRestartAfterEnding();
         return;
     }
     // 王冠抉择：左=放手，右=保留
@@ -709,7 +709,7 @@ function gameCrownKeep() {
     gameLoadLevel(GAME_currentLevelIndex);
 }
 
-/** 真结局后按 R 重开游戏 */
+/** 真结局后按 SPACE 回到开头背景叙述（循环即为结局） */
 function gameRestartAfterEnding() {
     GAME_endingShown = false;
     GAME_hasCrown = false;
@@ -717,11 +717,14 @@ function gameRestartAfterEnding() {
     GAME_crownedCycles = 0;
     GAME_crownedFirstDone = false;
     GAME_isNewCycle = false;
-    GAME_paused = false;
     uiOff(GAME_transitionOverlay);
     uiOff(GAME_transitionMessage);
     GAME_currentLevelIndex = 0;
     gameLoadLevel(GAME_currentLevelIndex);
+    // 循环即为结局：展示开头背景叙述
+    GAME_introPending = true;
+    GAME_paused = true;
+    uiOn(GAME_introOverlay);
 }
 
 /** 首次开场介绍：按空格关闭并标记已看过 */

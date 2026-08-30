@@ -47,6 +47,7 @@ function uiInit() {
         const go = (on) => {
             if (!on) return actions[a] = false;
             if (GAME_introPending) return gameIntroDismiss();
+            if (GAME_endingShown) return gameRestartAfterEnding();
             if (GAME_awaitingRespawn) return gameRetry();
             if (GAME_crownChoicePending) return a[0] == 'l' ? gameCrownReturn() : a[0] == 'r' && gameCrownKeep();
             actions[a] = true;
