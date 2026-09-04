@@ -15,18 +15,20 @@ const COPY = {
     // 死亡提示
     deathHint: '[ SPACE to try again ]',
     deathCounter: (n) => `deaths: ${n}`,
-    // 王冠抉择
+    // 王冠抉择（两版已统一替换为 Ver2.0 王冠自白，不再按轮回区分）
     choiceHint: '[ LEFT ] let go   [ RIGHT ] keep it',
-    choiceFirst: 'Wow, It\'s heavy...\nBut I can feel it sucking my colors,\nMaybe that\'s why it becomes heavier.',
-    choiceAgain: 'Too heavy.\nIt eats my colors and memories.\nPut it back...',
+    choiceFirst: 'Ah, it is this dazzling crown that brings it all to pass.\nPerhaps it feeds upon what it devours, and so grows ever more magnificent.',
+    choiceAgain: 'Ah, it is this dazzling crown that brings it all to pass.\nPerhaps it feeds upon what it devours, and so grows ever more magnificent.',
     // 真结局
     endingSub: 'I remember now.\nWhat I forgot was that I forget.\nThe colors are my memories...',
-    endingCycle: 'The rainbow has fallen.',
+    endingCycle: 'When all colors sink like a dying sunset, only black and white shall endure. And they are where my true belonging lies.',
     // 过渡
     corridorLabel: '...',
     corridorSub: '???',
     hiddenLabel: (part) => `THE ABANDONED PLACE — ${part}/3`,
     hiddenSub: 'Something stirs in the dark…',
+    // 首次带冠进入 13-1 的揭示（仅该次替换 hiddenCrownedSub）
+    hiddenRevealSub: 'Now I understand why this place is called the Abandoned Place…\nI once knew the truth, yet I cast it aside.',
     hiddenCrownedSub: 'When colors fade, black and white remain.',
     displayHidden: (part) => `The Abandoned Place ${part}/3`,
     cycleCrowned: 'the crowned journey begins…',
@@ -34,7 +36,7 @@ const COPY = {
     cyclePlain: 'Another cycle. The end…?',
     // 开场介绍
     introTitle: 'Fallen rainbow',
-    introBody: 'I\'ve forgotten...\n\tNope. The truth is, my colors are lost.\nIt\'s time to find them...',
+    introBody: 'I wake.\nMy colors are gone — and my memories with them.\nGo forth, and seek my hues. This is my destiny.',
     introHint: '[ SPACE ]',
     gameTitle: 'Fallen rainbow',
 };

@@ -12,22 +12,16 @@ function collideRect(rect1, rect2) {
 // ===================== 精灵帧加载（img.bin 位压缩 + 代码提供 rect） =====================
 let GAME_SpriteFrameCache = {};
 
-// 精灵帧在 img.bin 中的位置/尺寸（陷阱左侧 3 列 x 32，玩家右侧 6 帧 x 24）
-// 陷阱使用关卡主题色；玩家固定黑色渲染（fg 黑 / bg 透明）
+// 陷阱贴图在 img.bin 中的位置/尺寸（16px 高单行横向排列；独角兽玩家已移除，改为红色碰撞箱）
+// 陷阱使用关卡主题色渲染（位图为黑前景 / 透明背景）
 const GAME_SpriteRects = {
-    'black_hole1.png':      { x: 0,  y: 0,  w: 16, h: 16 },
-    'black_hole2.png':      { x: 0,  y: 16, w: 16, h: 16 },
-    'bounce_default.png':   { x: 16, y: 0,  w: 16, h: 16 },
-    'bounce_triggered.png': { x: 16, y: 16, w: 16, h: 16 },
-    'button_default.png':   { x: 32, y: 0,  w: 16, h: 8 },
-    'button_triggered.png': { x: 32, y: 8,  w: 16, h: 8 },
-    'destination.png':      { x: 32, y: 16, w: 16, h: 16 },
-    idle:  { x: 48,  y: 0, w: 24, h: 32, fg: '#000000', bg: 'rgba(0,0,0,0)' },
-    jump:  { x: 72,  y: 0, w: 24, h: 32, fg: '#000000', bg: 'rgba(0,0,0,0)' },
-    run1:  { x: 96,  y: 0, w: 24, h: 32, fg: '#000000', bg: 'rgba(0,0,0,0)' },
-    run2:  { x: 120, y: 0, w: 24, h: 32, fg: '#000000', bg: 'rgba(0,0,0,0)' },
-    run3:  { x: 144, y: 0, w: 24, h: 32, fg: '#000000', bg: 'rgba(0,0,0,0)' },
-    run4:  { x: 168, y: 0, w: 24, h: 32, fg: '#000000', bg: 'rgba(0,0,0,0)' },
+    'black_hole1.png':      { x: 0,  y: 0, w: 16, h: 16 },
+    'black_hole2.png':      { x: 16, y: 0, w: 16, h: 16 },
+    'bounce_default.png':   { x: 32, y: 0, w: 16, h: 16 },
+    'bounce_triggered.png': { x: 48, y: 0, w: 16, h: 16 },
+    'button_default.png':   { x: 64, y: 0, w: 16, h: 8 },
+    'button_triggered.png': { x: 80, y: 0, w: 16, h: 8 },
+    'destination.png':      { x: 96, y: 0, w: 16, h: 16 },
 };
 
 function cssColorToRGBA(colorStr) {

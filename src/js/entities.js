@@ -2,15 +2,6 @@
 // GameMap -> GAMEMAP_ 前缀
 // Player -> PLAYER_ 前缀
 
-// ===================== 马精灵系统 =====================
-// 玩家帧来自 img.bin（见 utils.js 的 GAME_SpriteRects），gameLoadLevelData 载入后赋给 PLAYER_horseCanvases
-// 角色按原生像素尺寸绘制（GAME_worldScale 下世界放大、角色保持 1x，两种像素尺寸共存）
-const HORSE_RUN_INTERVAL = 0.15;  // 跑步帧切换间隔（秒）
-let PLAYER_horseCanvases = null;  // { idle, jump, run1..run4 } → ImageBitmap
-let PLAYER_horseAnimTimer = 0;
-let PLAYER_horseRunIdx = 0;
-let PLAYER_horseFacingRight = true;
-
 // ===================== GameMap 模块（原GameMap类） =====================
 // GameMap全局变量
 let GAMEMAP_tileMapArray = [];
@@ -53,6 +44,8 @@ let PLAYER_gravityDir = 1; // 1=正常重力, -1=倒置
 let PLAYER_collision = {
     x: 0, y: 0, width: PLAYER_size_width, height: PLAYER_size_height
 }
+// 独角兽贴图已移除：玩家用红色碰撞箱表示
+const PLAYER_COLOR = '#ff0000';
 
 /**
  * 设置玩家位置（替代原setPosition方法）
@@ -107,22 +100,6 @@ function player_tick(deltaTime) {
             gameKillPlayer('SWALLOWED');
         }
         return;
-    }
-
-    // 朝向追踪
-    if (actions.left) PLAYER_horseFacingRight = false;
-    if (actions.right) PLAYER_horseFacingRight = true;
-
-    // 动画状态更新：地面奔跑才推进动画，否则复位
-    if (player_isOnGround() && (actions.left || actions.right)) {
-        PLAYER_horseAnimTimer += deltaTime;
-        if (PLAYER_horseAnimTimer >= HORSE_RUN_INTERVAL) {
-            PLAYER_horseAnimTimer -= HORSE_RUN_INTERVAL;
-            PLAYER_horseRunIdx = (PLAYER_horseRunIdx + 1) % 4;
-        }
-    } else {
-        PLAYER_horseAnimTimer = 0;
-        PLAYER_horseRunIdx = 0;
     }
 
     let dx = player_getDX(deltaTime);
@@ -383,91 +360,42 @@ function player_renderCrown(ctx, drawX, drawY, drawW) {
 function player_render(ctx) {
     if (GAME_awaitingRespawn) return;
 
-    // 黑洞吸入：逐渐缩小并被吸向洞心
+    // 黑洞吸入：红色碰撞箱缩小并被吸向洞心
     if (GAME_blackHoleSuck) {
         player_renderSuck(ctx);
         return;
     }
 
-    // 精灵未加载时 fallback 为黑矩形
-    if (!PLAYER_horseCanvases) {
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(
-            PLAYER_collision.x * GAME_tileSize * GAME_worldScale,
-            PLAYER_collision.y * GAME_tileSize * GAME_worldScale,
-            PLAYER_size_width * GAME_tileSize * GAME_worldScale,
-            PLAYER_size_height * GAME_tileSize * GAME_worldScale
-        );
-        return;
-    }
-
-    // 选择当前帧
-    let frame;
-    if (!player_isOnGround()) {
-        frame = PLAYER_horseCanvases['jump'];
-    } else if (actions.left || actions.right) {
-        frame = PLAYER_horseCanvases[['run1', 'run2', 'run3', 'run4'][PLAYER_horseRunIdx]];
-    } else {
-        frame = PLAYER_horseCanvases['idle'];
-    }
-    if (!frame) return;
-
-    // 绘制位置：世界坐标按 worldScale 放大，精灵按 characterScale 整数放大（4:5≈0.8 比例，均锐利）
-    const ts = GAME_tileSize * GAME_worldScale;
-    const cx = (PLAYER_collision.x + PLAYER_collision.width / 2) * ts;
-    const bottom = (PLAYER_collision.y + PLAYER_collision.height) * ts;
-    const drawH = frame.height * GAME_characterScale;
-    const drawW = frame.width * GAME_characterScale;
-    // 取整避免子像素抖动
-    const drawX = Math.round(cx - drawW / 2);
-    const drawY = Math.round(bottom - drawH);
-
-    ctx.imageSmoothingEnabled = false;
-    ctx.save();
-    if (!PLAYER_horseFacingRight) {
-        ctx.translate(cx, 0);
-        ctx.scale(-1, 1);
-        ctx.translate(-cx, 0);
-    }
-    // 倒置重力（13-3）：角色贴图整体上下颠倒
-    if (PLAYER_gravityDir < 0) {
-        const cy = (PLAYER_collision.y + PLAYER_collision.height / 2) * ts;
-        ctx.translate(0, cy);
-        ctx.scale(1, -1);
-        ctx.translate(0, -cy);
-    }
-    ctx.drawImage(frame, drawX, drawY, drawW, drawH);
-    // 王冠（拿到后才画；对称形状无需随朝向镜像，重力倒置时随角色一起翻转）
-    if (GAME_hasCrown) player_renderCrown(ctx, drawX, drawY, drawW);
-    ctx.restore();
+    // 玩家以红色碰撞箱表示（世界坐标即原生像素，1 tile=16px）
+    const ts = GAME_tileSize;
+    const x = PLAYER_collision.x * ts;
+    const y = PLAYER_collision.y * ts;
+    const w = PLAYER_collision.width * ts;
+    const h = PLAYER_collision.height * ts;
+    ctx.fillStyle = PLAYER_COLOR;
+    ctx.fillRect(x, y, w, h);
+    // 王冠画在碰撞箱顶部（碰撞箱居中对称，无需朝向镜像/重力翻转）
+    if (GAME_hasCrown) player_renderCrown(ctx, x, y, w);
 }
 
 /**
- * 黑洞吸入渲染：玩家从起点逐渐缩小并移向洞心
+ * 黑洞吸入渲染：红色碰撞箱从起点逐渐缩小并移向洞心
  * @param {CanvasRenderingContext2D} ctx
  */
 function player_renderSuck(ctx) {
     const s = GAME_blackHoleSuck;
     const p = Math.min(1, s.t / s.duration);
-    const frame = PLAYER_horseCanvases['jump'] || PLAYER_horseCanvases['idle'];
-    if (!frame) return;
-    const scale = GAME_characterScale * (1 - p); // 从 4x 缩到 0
-    const drawW = Math.max(1, frame.width * scale);
-    const drawH = Math.max(1, frame.height * scale);
-    const ts = GAME_tileSize * GAME_worldScale;
+    const ts = GAME_tileSize;
     // 目标实时跟随移动中的黑洞位置
     const trap = TRAP_instances[s.id];
+    if (!trap) return;
     const toX = trap.c.x + trap.c.width / 2;
     const toY = trap.c.y + trap.c.height / 2;
     const cx = (s.fromX + (toX - s.fromX) * p) * ts;
     const cy = (s.fromY + (toY - s.fromY) * p) * ts;
-    ctx.save();
-    // 倒置重力（13-3）：吸入动画的贴图同样上下颠倒
-    if (PLAYER_gravityDir < 0) {
-        ctx.translate(cx, cy);
-        ctx.scale(1, -1);
-        ctx.translate(-cx, -cy);
-    }
-    ctx.drawImage(frame, cx - drawW / 2, cy - drawH / 2, drawW, drawH);
-    ctx.restore();
+    const w = PLAYER_collision.width * ts * (1 - p);
+    const h = PLAYER_collision.height * ts * (1 - p);
+    if (w < 1 || h < 1) return;
+    ctx.fillStyle = PLAYER_COLOR;
+    ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
 }

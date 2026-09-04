@@ -176,9 +176,7 @@ function gameLevelDisplayName(levelIndex) {
 
 // -------------------------- 全局变量 --------------------------
 // system（画布/世界相关引用已移入 ui.js）
-let GAME_tileSize = 16;
-let GAME_worldScale = 5;         // 世界内部渲染缩放（瓦片 16→80px）
-let GAME_characterScale = 4;     // 角色内部渲染缩放（精灵 24×32→96×128px，4:5≈0.8 比例）
+let GAME_tileSize = 16; // 1 tile = 16px（画布为贴图原生分辨率，CSS 负责放大显示）
 
 // map
 let GAME_mapWidth = 32;
@@ -220,6 +218,7 @@ let GAME_introPending = false; // 开场介绍待响应
 let GAME_endingShown = false;  // 真结局画面已展示
 let GAME_crownedKept = false;  // 玩家选择了保留王冠（坏循环）
 let GAME_crownedFirstDone = false; // 首次拿冠回归 1-1 已展示（区分 cycleCrowned/cycleKept）
+let GAME_hiddenCrownedRevealed = false; // 首次带冠进入 13-1 已展示揭示句（区分 hiddenRevealSub/hiddenCrownedSub）
 let GAME_crownMoment = false;  // 13-3 得冠瞬间定格中
 let GAME_deathAt = 0;          // 死亡时刻（死亡 glitch 时长基准）
 
@@ -286,9 +285,9 @@ function gamePlayGlitch() {
  * 画布自适应（替代原 _resizeCanvas 方法）
  */
 function gameResizeCanvas() {
-    // 设置画布内部分辨率（绘制分辨率）
-    GAME_canvas.width = GAME_mapWidth * GAME_tileSize * GAME_worldScale;
-    GAME_canvas.height = GAME_mapHeight * GAME_tileSize * GAME_worldScale;
+    // 设置画布内部分辨率（绘制分辨率 = 原生贴图像素）
+    GAME_canvas.width = GAME_mapWidth * GAME_tileSize;
+    GAME_canvas.height = GAME_mapHeight * GAME_tileSize;
     if (GAME_worldCanvas) {
         GAME_worldCanvas.width = GAME_canvas.width;
         GAME_worldCanvas.height = GAME_canvas.height;
@@ -349,7 +348,6 @@ function gameLoadLevelData(levelIndex) {
     ])
     .then(([lvlBuf, spriteCache]) => {
         GAME_SpriteFrameCache = spriteCache;
-        PLAYER_horseCanvases = spriteCache;
 
         // 指针定位：void 版 12-2 在合并文件最后一块（偏移表末项），其余按索引
         const voidOffset = GAME_lvlOffsets.length - 1;
@@ -551,7 +549,7 @@ function gameTick(deltaTime) {
 
 /**
  * 渲染帧（替代原 render 方法）
- * 世界（背景+陷阱+地形）以 GAME_worldScale 渲染到离屏画布，角色以原生像素尺寸叠加
+ * 世界与玩家红色碰撞箱都以原生像素渲染（1 tile = 16px，与贴图一致）
  */
 function gameRender() {
     const wctx = GAME_worldContext;
@@ -559,7 +557,6 @@ function gameRender() {
     wctx.imageSmoothingEnabled = false;
     wctx.fillStyle = GAME_backgroundColor;
     wctx.fillRect(0, 0, GAME_worldCanvas.width, GAME_worldCanvas.height);
-    wctx.setTransform(GAME_worldScale, 0, 0, GAME_worldScale, 0, 0);
     trapManagerRender(wctx);
     blackHoleTrailRender(wctx);
     gamemap_render(wctx);
@@ -568,16 +565,19 @@ function gameRender() {
     GAME_ctx.setTransform(1, 0, 0, 1, 0, 0);
     GAME_ctx.imageSmoothingEnabled = false;
     GAME_ctx.drawImage(GAME_worldCanvas, 0, 0);
-    // 角色按原生像素尺寸绘制在可见画布上
+    // 玩家红色碰撞箱叠加在可见画布上
     player_render(GAME_ctx);
     // 死亡 glitch：死亡瞬间世界画面水平错位闪烁（渐弱）
     if (GAME_awaitingRespawn) {
         const t = (performance.now() - GAME_deathAt) / 1000;
         if (t < 0.35) {
             const c = GAME_worldCanvas;
+            const band = Math.ceil(c.height / 5);
             for (let i = 5; i--;) {
-                const y = i * 256;
-                GAME_ctx.drawImage(c, 0, y, c.width, 260, Math.sin(t * 70 + i * 3) * 90 | 0, y, c.width, 260);
+                const y = i * band;
+                const hh = Math.min(band + 1, c.height - y);
+                const dx = (Math.sin(t * 70 + i * 3) * c.width * 0.035) | 0;
+                GAME_ctx.drawImage(c, 0, y, c.width, hh, dx, y, c.width, hh);
             }
         }
     }
@@ -622,6 +622,7 @@ function gameOnDestinationReached() {
             GAME_hasCrown = true;
             GAME_crownedKept = false;
             GAME_crownedCycles = 0;
+            GAME_hiddenCrownedRevealed = false; // 新一轮带冠可再次看到 13-1 揭示句
             GAME_totalDeaths = gameReadTotalDeaths();
             gameRefreshDeathCounter(); // 显示右上角计数
             // 王冠音效 — C-E-G-C 上行琶音
@@ -795,10 +796,13 @@ function gameBeginTransition(levelIndex) {
     } else if (levelIndex >= GAME_HIDDEN_START_INDEX) {
         const hiddenPart = levelIndex - GAME_HIDDEN_START_INDEX + 1;
         GAME_transitionLabel.textContent = COPY.hiddenLabel(hiddenPart);
-        // 带冠进入 13-1 展示褪色终局文案
-        GAME_transitionSub.textContent = (GAME_hasCrown && levelIndex === GAME_HIDDEN_START_INDEX)
-            ? COPY.hiddenCrownedSub
-            : COPY.hiddenSub;
+        // 带冠进入 13-1：首次展示 Abandoned Place 揭示句，之后回到褪色终局文案
+        if (GAME_hasCrown && levelIndex === GAME_HIDDEN_START_INDEX) {
+            GAME_transitionSub.textContent = GAME_hiddenCrownedRevealed ? COPY.hiddenCrownedSub : COPY.hiddenRevealSub;
+            GAME_hiddenCrownedRevealed = true;
+        } else {
+            GAME_transitionSub.textContent = COPY.hiddenSub;
+        }
         sfx(130, 0.2, 0.45, 0, 0.35, 65);
         sfx(98, 0.12, 0.6, 3, 0.25);
     } else {
