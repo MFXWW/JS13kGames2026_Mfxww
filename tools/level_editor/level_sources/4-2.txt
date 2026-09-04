@@ -1,37 +1,27 @@
 :map
-base solid
-empty 2 6 29 10
-empty 7 11 9 15
-empty 13 11 15 15
-empty 19 11 22 15
-empty 25 11 27 15
+base empty
+solid 0 0 1 15
+solid 2 12 6 15
+solid 30 0 31 15
+solid 25 12 29 15
 
 :object
-destination dest1 28 10
-bounce bn1 6 11
-floatrect fr1 10 12 3 1
-bounce bn2 12 11
-blackhole bh1 14 4
-bounce bn3 18 11
-floatrect fr2 22 11 1 5
-bounce bn4 24 11
+destination dest1 28 11
+bounce bn1 1 11
+bounce bn2 30 8
+bounce bn3 1 4 -no-collision
+bounce bn4 0 4
 
 :script
-// sp 4 9
+// sp 4 10
 wait player-in-area 6 10 1 1
-move bn1 6 10 0.25
-wait player-in-area 12 10 1 1
-move bn2 12 10 0.25
-move bh1 14 8
-wait player-in-area 13 10 1 1
-move fr1 13 12 0.5
-wait player-in-area 18 10 1 1
-move bn3 18 10 0.25
-wait player-in-area 20 8 1 1
-move fr2 23 11 0.25 -block
-wait for-seconds 0.5
-move fr2 22 11 0.25
-wait player-in-area 24 10 1 1
-move bn4 24 10 0.25
+move bn1 30 11 13
+wait player-in-area 23 6 1 6
+move dest1 28 3 0.25
+move bn2 1 8 14
+wait for-seconds 5
+move bn3 30 4 14
+wait for-seconds 3
+move bn4 31 4 14
 
 :end

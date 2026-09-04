@@ -25,7 +25,8 @@ move fr2 16 11 0.25
 move btn1 1 8 0.25
 wait button-press btn1
 move fr3 16 9 0.25
-wait player-in-area 15 7 1 4
+wait player-in-area 14 7 2 2
+wait for-seconds 0.5
 move fr3 14 9 0.25 -block
 move fr3 16 9 0.25
 

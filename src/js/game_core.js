@@ -75,11 +75,11 @@ function gameToggleMute() {
     uiVis(GAME_muteMark, GAME_muted);
 }
 
-// ==================== 关卡定义（1-7章×3 + 8章×2 + 9章×3 + 10-12章×2 + 走廊 + 隐藏章×3 = 39关） ====================
+// ==================== 关卡定义（1-3章×3 + 4章×2 + 5-7章×3 + 8章×2 + 9章×3 + 10-12章×2 + 走廊 + 隐藏章×3 = 35关） ====================
 // 第13章 "The Abandoned Place" 为隐藏区：12-2坠落 → corridor → 触碰Dest → 13-1
-const GAME_NORMAL_LAST_INDEX = 31;    // 12-2 在数组中的索引
-const GAME_CORRIDOR_INDEX = 32;       // corridor 过渡关
-const GAME_HIDDEN_START_INDEX = 33;   // 13-1 在数组中的索引
+const GAME_NORMAL_LAST_INDEX = 30;    // 12-2 在数组中的索引
+const GAME_CORRIDOR_INDEX = 31;       // corridor 过渡关
+const GAME_HIDDEN_START_INDEX = 32;   // 13-1 在数组中的索引
 
 const levels = (function() {
     const lvls = [];
@@ -103,7 +103,7 @@ const levels = (function() {
         [5, 8], [5, 8], [5, 8],
         [7, 7], [2, 5], [16, 1],
         [6, 10], [5, 5], [9, 5],
-        [3, 9], [4, 9], [4, 10], 
+        [3, 9], [4, 10],             // 4-1, 4-2(原4-3内容)
         [3, 9], [3, 10], [4, 10], 
         [3, 7], [3, 8], [2, 10], 
         [2, 2], [3, 12], [5, 6], 
@@ -111,14 +111,14 @@ const levels = (function() {
         [3, 10], [9, 7],
         // 9章 ×3 
         [3, 9], [4, 12], [5, 9],
-        // 10章 ×2 
-        [3, 12], [3, 1],
+        // 10章 ×2
+        [4, 9], [3, 1],              // 10-1(原4-2内容), 10-2
         // 11章 ×2 
         [3, 3], [4, 3],
         // 12章 ×2
         [23, 11], [1, 10],
     ];
-    const chapterLevelCounts = [3, 3, 3, 3, 3, 3, 3, 2, 3, 2, 2, 2];
+    const chapterLevelCounts = [3, 3, 3, 2, 3, 3, 3, 2, 3, 2, 2, 2];
     let level_fullID = 0;
     for (let ch = 1; ch <= 12; ch++) {
         const t = themes[ch - 1];

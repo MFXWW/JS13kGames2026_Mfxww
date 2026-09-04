@@ -10,15 +10,15 @@ const OUT = path.join(SRC_DIR, 'lvl.bin');
 // 与 game_core.js levels 数组顺序一致
 function levelNames() {
     const names = [];
-    const chapterLevelCounts = [3, 3, 3, 3, 3, 3, 3, 2, 3, 2, 2, 2];
+    const chapterLevelCounts = [3, 3, 3, 2, 3, 3, 3, 2, 3, 2, 2, 2];
     for (let ch = 1; ch <= 12; ch++) {
         for (let p = 1; p <= chapterLevelCounts[ch - 1]; p++) {
             names.push(`${ch}-${p}`);
         }
     }
-    names.push('corridor');       // index 32
-    names.push('13-1', '13-2', '13-3'); // index 33-35
-    names.push('12-2-void');      // index 36（无冠首次 12-2 强制坠落版）
+    names.push('corridor');       // index 31
+    names.push('13-1', '13-2', '13-3'); // index 32-34
+    names.push('12-2-void');      // index 35（无冠首次 12-2 强制坠落版）
     return names;
 }
 
