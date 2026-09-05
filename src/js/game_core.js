@@ -177,6 +177,7 @@ function gameLevelDisplayName(levelIndex) {
 // -------------------------- 全局变量 --------------------------
 // system（画布/世界相关引用已移入 ui.js）
 let GAME_tileSize = 16; // 1 tile = 16px（画布为贴图原生分辨率，CSS 负责放大显示）
+let GAME_scaleK = 1;    // 画布整数放大倍数（内部像素→CSS像素，gameResizeCanvas 更新）
 
 // map
 let GAME_mapWidth = 32;
@@ -293,14 +294,14 @@ function gameResizeCanvas() {
         GAME_worldCanvas.height = GAME_canvas.height;
     }
 
-    // 通过 CSS 缩放画布以适配窗口
-    const maxWidth = window.innerWidth * 0.9;
-    const maxHeight = window.innerHeight * 0.8;
-    let scale = Math.min(maxWidth / GAME_canvas.width, maxHeight / GAME_canvas.height);
-    if (!isFinite(scale) || scale <= 0) scale = 1;
-    // 应用 CSS 大小（取整以避免子像素模糊）
-    GAME_canvas.style.width = Math.max(1, Math.floor(GAME_canvas.width * scale)) + 'px';
-    GAME_canvas.style.height = Math.max(1, Math.floor(GAME_canvas.height * scale)) + 'px';
+    // 通过 CSS 整数倍放大画布：每个内部像素 = k×k 屏幕像素，避免非整数缩放导致像素破碎
+    const maxW = window.innerWidth * 0.9;
+    const maxH = window.innerHeight * 0.8;
+    let k = Math.floor(Math.min(maxW / GAME_canvas.width, maxH / GAME_canvas.height));
+    if (k < 1) k = 1;
+    GAME_scaleK = k;
+    GAME_canvas.style.width = GAME_canvas.width * k + 'px';
+    GAME_canvas.style.height = GAME_canvas.height * k + 'px';
     // 像素画面（避免全屏放大时变糊）
     GAME_canvas.style.imageRendering = 'pixelated';
 }
@@ -667,12 +668,8 @@ function gameCrownChoice() {
     GAME_crownChoicePending = true;
     GAME_paused = true;
     bgmStop();
-    // 轮回次数越多，抉择文案越接近真相
-    if (GAME_crownedCycles > 0) {
-        GAME_crownChoiceMessage.textContent = COPY.choiceAgain;
-    } else {
-        GAME_crownChoiceMessage.textContent = COPY.choiceFirst;
-    }
+    // 王冠自白（文案统一，与轮回次数无关）
+    GAME_crownChoiceMessage.textContent = COPY.choice;
     uiOn(GAME_crownChoiceOverlay);
     sfx(180, 0.6, 0.3, 0, 0.5, 55);
 }
@@ -880,7 +877,7 @@ function gameInit() {
     GAME_deathHint.textContent = COPY.deathHint;
     GAME_crownChoiceHint.textContent = COPY.choiceHint;
     GAME_deathCounter.textContent = COPY.deathCounter(0);
-    if (GAME_introTitle) GAME_introTitle.textContent = COPY.introTitle;
+    if (GAME_introTitle) GAME_introTitle.textContent = COPY.gameTitle;
     if (GAME_introBody) GAME_introBody.innerHTML = COPY.introBody.split('\n').join('<br>');
     if (GAME_introHint) GAME_introHint.textContent = COPY.introHint;
 

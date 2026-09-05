@@ -1,9 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Fallen rainbow</title>
-    <style>
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
@@ -100,66 +95,4 @@
         #touchControls button:nth-child(3) { margin-left: auto; }
         #touchControls button:active { background: #fff4; }
         @media (pointer: coarse) { #touchControls { display: flex; } }
-    </style>
-</head>
-<body>
-
-    <div id="headerBar">
-        <span id="gameTitle"></span>
-        <span id="levelDisplay"></span>
-    </div>
-
-    <div id="muteMark">♪</div>
-
-    <div id="gameContainer">
-        <canvas id="gameCanvas"></canvas>
-        <div id="deathCounter"></div>
-    </div>
-
-    <div id="deathOverlay">
-        <div id="deathMessage"></div>
-        <div id="deathHint"></div>
-    </div>
-
-    <div id="transitionOverlay"></div>
-    <div id="transitionMessage">
-        <div class="level-label"></div>
-        <div class="level-sub"></div>
-        <div class="cycle-notice"></div>
-    </div>
-
-    <div id="crownChoiceOverlay">
-        <div id="crownChoiceMessage"></div>
-        <div id="crownChoiceHint"></div>
-    </div>
-
-    <div id="glitchOverlay"></div>
-
-    <div id="introOverlay">
-        <div id="introMessage">
-            <div class="intro-title"></div>
-            <div class="intro-body"></div>
-            <div class="intro-hint"></div>
-        </div>
-    </div>
-
-    <div id="touchControls"><button>◀</button><button>▶</button><button>▲</button></div>
-
-<script src="js/copy.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/entities.js"></script>
-
-<script src="js/traps.js"></script>
-<script src="js/traps/trap_bounce.js"></script>
-<script src="js/traps/trap_button.js"></script>
-<script src="js/traps/trap_destination.js"></script>
-<script src="js/traps/trap_floatrect.js"></script>
-<script src="js/traps/trap_oneway.js"></script>
-<script src="js/traps/trap_blackhole.js"></script>
-
-<script src="js/level_parser.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/game_core.js"></script>
-<script src="js/sound.js"></script>
-</body>
-</html>
+    

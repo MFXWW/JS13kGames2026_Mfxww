@@ -12,8 +12,8 @@ if errorlevel 1 goto :fail
 
 echo === [2/4] roadroller 打包 ===
 rem npx 实为 npx.cmd，不加 call 会中断本批处理后续命令
-rem -O2 用约 300 次尝试调参，比默认再小一点
-call npx --no-install roadroller -O2 ..\dist\game.min.js -o ..\dist\game.rolled.js
+rem -O1 约 30 次调参（比 -O2 的 ~300 次快约 6 倍；实测 zip 与 -O2 基本持平）
+call npx --no-install roadroller -O1 ..\dist\game.min.js -o ..\dist\game.rolled.js
 if errorlevel 1 goto :fail
 
 echo === [3/4] 合并关卡 + 单文件打包 zip ===

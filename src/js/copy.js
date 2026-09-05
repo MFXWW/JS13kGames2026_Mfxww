@@ -15,10 +15,9 @@ const COPY = {
     // 死亡提示
     deathHint: '[ SPACE to try again ]',
     deathCounter: (n) => `deaths: ${n}`,
-    // 王冠抉择（两版已统一替换为 Ver2.0 王冠自白，不再按轮回区分）
+    // 王冠抉择（文案统一，不再按轮回区分）
     choiceHint: '[ LEFT ] let go   [ RIGHT ] keep it',
-    choiceFirst: 'Ah, it is this dazzling crown that brings it all to pass.\nPerhaps it feeds upon what it devours, and so grows ever more magnificent.',
-    choiceAgain: 'Ah, it is this dazzling crown that brings it all to pass.\nPerhaps it feeds upon what it devours, and so grows ever more magnificent.',
+    choice: 'Ah, it is this dazzling crown that brings it all to pass.\nPerhaps it feeds upon what it devours, and so grows ever more magnificent.',
     // 真结局
     endingSub: 'I remember now.\nWhat I forgot was that I forget.\nThe colors are my memories...',
     endingCycle: 'When all colors sink like a dying sunset, only black and white shall endure. And they are where my true belonging lies.',
@@ -35,7 +34,6 @@ const COPY = {
     cycleKept: (n) => `the colors have a keeper. cycle ${n}.`,
     cyclePlain: 'Another cycle. The end…?',
     // 开场介绍
-    introTitle: 'Fallen rainbow',
     introBody: 'I wake.\nMy colors are gone — and my memories with them.\nGo forth, and seek my hues. This is my destiny.',
     introHint: '[ SPACE ]',
     gameTitle: 'Fallen rainbow',

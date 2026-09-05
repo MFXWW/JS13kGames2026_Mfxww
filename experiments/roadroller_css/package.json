@@ -1,0 +1,13 @@
+{
+  "name": "roadroller-css-exp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "实验：给 CSS 加词法 + token 缩写预处理，喂给 roadroller(text) 核心，看能否逼近 JS 模式的压缩率",
+  "scripts": {
+    "samples": "node run/collect-samples.mjs",
+    "bench": "node run/benchmark.mjs",
+    "verify": "node run/roundtrip.mjs"
+  },
+  "dependencies": {}
+}
