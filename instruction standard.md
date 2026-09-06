@@ -102,4 +102,4 @@
   - block_flag: 1
 
 ---
-本文件与实现相关：`level_parser.js`、`lvl/level_compiler.js`。请在修改任一端实现后同步更新另一端实现以及更新此文档。
+本文件与实现相关：`src/js/level_parser.js`（解析）、`tools/level_editor/node_level_compiler.js`（编译）。请在修改任一端实现后同步更新另一端实现以及更新此文档。

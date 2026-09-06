@@ -16,7 +16,7 @@ Narrative anchors and the UI they land on. IDs/classes below match `src/index.ht
 ### 1.1 Boot / restart
 - First launch only (cookie `mfxww_game_intro` unset) **and** after the true ending
   (`gameRestartAfterEnding`) show the full-screen `#introOverlay`:
-  - `#introMessage .intro-title` → `COPY.introTitle` ("Fallen rainbow")
+  - `#introMessage .intro-title` → `COPY.gameTitle` ("Fallen rainbow")
   - `#introMessage .intro-body` → `COPY.introBody` (multi-line, `\n` → `<br>`)
   - `#introMessage .intro-hint` → `COPY.introHint` (`[ SPACE ]`)
 - `SPACE` → `gameIntroDismiss()` → first level (1-1).
@@ -56,12 +56,11 @@ Narrative anchors and the UI they land on. IDs/classes below match `src/index.ht
 
 ### 1.6 Crown choice & endings (reaching 13-3 while crowned)
 - Beating 13-3 **while crowned** no longer grants a crown — it opens `#crownChoiceOverlay`:
-  - `#crownChoiceMessage` = `COPY.choiceFirst` on the first decision, `COPY.choiceAgain`
-    from the second cycle on (the more loops, the closer the text gets to the truth)
-  - `#crownChoiceHint` = `[ LEFT ] let go   [ RIGHT ] keep it`
+  - `#crownChoiceMessage` = `COPY.choice`（文案统一，不再按轮回区分——王冠的坦白始终在台面上）
+  - `#crownChoiceHint` = `COPY.choiceHint` = `[ LEFT ] let go   [ RIGHT ] keep it`
 - **LEFT / A** → `gameCrownReturn()` — drop the crown → the transition screen becomes the
   **true ending**: `level-sub` = `COPY.endingSub`, `cycle-notice` = `COPY.endingCycle`
-  (`The rainbow has fallen.`). Then `SPACE` → `gameRestartAfterEnding()` → back to 1-1 with the
+  (see N8 for the exact text). Then `SPACE` → `gameRestartAfterEnding()` → back to 1-1 with the
   intro overlay again: *the loop is the ending.*
 - **RIGHT / D** → `gameCrownKeep()` — keep the crown → `crownedKept = true`, `crownedCycles++`,
   wrap to 1-1 and keep looping (the "bad" loop that fades forever).
@@ -169,7 +168,7 @@ Ver 2.0 full copy can be fed in with pacing instead of a wall of text.
   - Page 2 — the admission: `I believe my destiny is to reclaim my colours, for I find myself
     shrouded in blackness. So go forth, and seek my hues. This is my destiny.`
   - Current single-block fallback (already in `COPY.introBody`) is fine if pages are not built:
-    `I've forgotten... \n\tNope. The truth is, my colors are lost.\nIt's time to find them...`
+    `I wake. My colors are gone — and my memories with them. Go forth, and seek my hues. This is my destiny.`
 - **Control:** SPACE dismisses; store the seen-cookie so returning players skip it.
 
 ### N2 — Normal level cards (`#transitionMessage`)
@@ -216,22 +215,20 @@ Ver 2.0 full copy can be fed in with pacing instead of a wall of text.
 
 ### N7 — Crown choice (`#crownChoiceOverlay`)
 - **Fires:** beating 13-3 while crowned (not the crown-granting run). Pauses the game.
-- **How to use:** this is the moral fork, so the copy must name the cost — existing escalation is
-  already on-theme and should be kept:
-  - First decision (`choiceFirst`): `Wow, It's heavy...\nBut I can feel it sucking my colors,\nMaybe
-    that's why it becomes heavier.`
-  - Later decisions (`choiceAgain`): `Too heavy.\nIt eats my colors and memories.\nPut it back...`
-  - **Optional 2nd-cycle upgrade** with the Ver 2.0 voice: add the crown's confession as a fading
-    line above the choice: `Ah, it is this dazzling crown that brings it all to pass. Perhaps it
-    feeds upon what it devours, and so grows ever more magnificent.`
-- Hint stays `[ LEFT ] let go   [ RIGHT ] keep it` — LEFT (A) returns the crown, RIGHT (D) keeps it.
+- **How to use:** this is the moral fork, so the copy must name the cost — the shipped `COPY.choice`
+  already puts the crown's confession on the screen (no per-cycle escalation; the truth is always
+  on the table):
+  - `COPY.choice`: `Ah, it is this dazzling crown that brings it all to pass.\nPerhaps it feeds
+    upon what it devours, and so grows ever more magnificent.`
+- Hint stays `COPY.choiceHint` = `[ LEFT ] let go   [ RIGHT ] keep it` — LEFT (A) returns the crown, RIGHT (D) keeps it.
 
 ### N8 — True ending (dropping the crown)
 - **Fires:** LEFT at N7 → `gameCrownReturn()` → transition screen shows the ending; SPACE → loop.
 - **How to use:** the biggest single prose allowance, since the loop is over:
   - `level-sub` = `COPY.endingSub`: `I remember now.\nWhat I forgot was that I forget.\nThe colors are
     my memories...`
-  - `cycle-notice` = `COPY.endingCycle`: `The rainbow has fallen.`
+  - `cycle-notice` = `COPY.endingCycle`: `When all colors sink like a dying sunset, only black and
+    white shall endure. And they are where my true belonging lies.`
   - **Optional full-copy closer** (same screen, below the sub): `When all colours sink like a dying
     sunset, only black and white shall endure. And they are where my true belonging lies.` — lands
     perfectly because the crown is finally gone and the world is black/white again.

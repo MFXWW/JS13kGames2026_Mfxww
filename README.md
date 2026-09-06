@@ -20,33 +20,29 @@
 
 ### 运行游戏
 
-项目使用 **纯静态前端**（HTML + Canvas + JavaScript），无需构建工具。需要本地 HTTP 服务器（因 `fetch()` 加载二进制关卡文件）：
+项目使用 **纯静态前端**（HTML + Canvas + JavaScript），资源在**打包页尾切片**读取（单文件），需本地 HTTP 服务器：
 
 ```bash
 # 进入项目目录
 cd 13_times_of_death_V2
 
-# 方式一：Python（推荐）
+# 启动本地服务器（方式一：Python；方式二：双击 localServer.bat）
 python -m http.server 8000
-
-# 方式二：双击 localServer.bat
 ```
 
-浏览器打开 `http://localhost:8000` 即可游玩。
+- **日常游玩 / 生产**：先 `npm run build`，浏览器打开 `http://localhost:8000/dist/`（或直接解压部署 `dist/fallen_rainbow.zip` 内的单文件页面）
+- **开发调试**（未压缩源码，便于查错）：先 `node build\_make_verify.js` 生成验证页，再打开 `http://localhost:8000/build/_verify/index.html`
+  - 注意：源码按页尾切片加载 img/lvl，`/src/` 无打包尾数据不能直接运行，请用上面的 `_verify` 页调试
 
 ### 编译（生产环境压缩）
 
 ```bash
-# 需要安装 terser
-npm install -g terser
-
-# 运行编译脚本
-terser_compile.bat
+# 一键构建（dom_rename → terser → roadroller → 合并关卡 → 单文件 zip）
+npm run build        # 或直接运行 build\build_all.bat
 ```
 
-编译产物输出至 `compiled/` 目录，可直接部署。
-
-> 打包后有概率符合要求 :-)
+- 产物：`dist/fallen_rainbow.zip`（**单文件**：HTML+JS 内联、img/lvl 尾部追加，可直接部署）
+- 硬约束：zip ≤ **13312 B**（js13k，13 × 1024），构建末尾会打印实际大小与是否 PASS
 
 ---
 
@@ -70,30 +66,38 @@ terser_compile.bat
 ├── src/                    # 可读源码（唯一修改源）
 │   ├── index.html          # 开发入口（多脚本 + 可读 CSS）
 │   ├── js/                 # 游戏 JS
-│   │   ├── game_core.js    # 核心循环、关卡管理、输入处理
+│   │   ├── game_core.js    # 核心循环、关卡管理、输入处理、镜头/相机
 │   │   ├── level_parser.js # 二进制关卡解析
 │   │   ├── ui.js           # DOM 获取与 class 切换（id/class 名集中于此）
 │   │   ├── copy.js / entities.js / utils.js / sound.js / traps.js
 │   │   └── traps/          # trap_bounce / trap_button / trap_blackhole / trap_destination / trap_floatrect / trap_oneway
 │   └── assets/             # 运行资源
-│       ├── img.bin         # 精灵图二进制
-│       └── lvl/            # 关卡 .bin（1-1 ~ 13-3、corridor、12-2-void）
-├── build/                  # 构建脚本（npm run build 或直接跑 build_all.bat）
-│   ├── build_all.bat       # 一键构建：dom_rename → terser → roadroller → 资源 → zopfli zip
+│       ├── img.bin         # 精灵图二进制（构建由 bmp_combiner 产出）
+│       └── lvl/            # lvl.bin：36 关合并（u8 长度前缀，指针式加载）
+├── build/                  # 构建脚本
+│   ├── build_all.bat       # 一键构建：dom_rename → terser → roadroller → lvl_combine → package_single
 │   ├── terser_compile.bat  # terser 压缩（读 src/js，产出 dist/game.min.js）
-│   ├── dom_rename.js       # 构建时把 id/class 名改成短名（a-r/s-z）+ 生成 dist/index.html
+│   ├── dom_rename.js       # 构建时把 id/class 名改成短名 + 生成 dist/index.html
 │   ├── css_min.js          # CSS 压缩
-│   └── zopfli_zip.js       # 最优 deflate 打 zip
+│   ├── package_single.js   # 单文件打包：内联 rolled + 尾部追加 img/lvl + zopfli 打 zip
+│   ├── _make_verify.js     # 生成未压缩验证页 build/_verify/index.html（含 _verify/）
+│   └── COMPRESSION_PLAN.md # 压缩达标历程记录
 ├── tools/                  # 辅助工具
-│   ├── level_editor/       # 可视化关卡编辑器 + 文本→二进制编译器
+│   ├── level_editor/       # 可视化关卡编辑器 + 文本→二进制编译器（含 level_sources/*.txt）
 │   ├── bmp_combiner/       # 精灵图合成（combine.bat 产出 src/assets/img.bin）
-│   └── horse/              # 玩家精灵源文件
-├── dist/                   # 构建产物（可直接部署）
-│   ├── index.html          # 入口（id/class 已短名化，CSS 已压缩）
-│   ├── game.rolled.js      # roadroller 压缩后的完整游戏
-│   ├── img.bin / lvl/lvl.bin
-│   └── fallen_rainbow.zip  # 交付包
-└── localServer.bat         # 本地服务器（开发 /src/，生产 /dist/）
+│   ├── unicorn_soul/       # 玩家像素形象源（.aseprite + 渲染核对）
+│   ├── unicorn_canvas/     # 玩家矢量/像素动画原型（合入前验证）
+│   ├── colorGen.html       # 配色工具
+│   └── horse/              # 早期废稿（玩家形象已弃用）
+├── dist/                   # 构建产物
+│   ├── game.min.js / game.rolled.js   # 中间产物（terser / roadroller）
+│   ├── index.html          # 单文件版入口（JS 内联 + 尾部 img/lvl）
+│   └── fallen_rainbow.zip  # 交付包（≤ 13312 B）
+├── release/                # 历次达标 zip 归档
+├── homepage.md             # 提交/主页文案（叙事原文游离于 13KB 之外）
+├── copy_plan.md            # 文案源计划（游戏流程各节点 → 文案映射）
+├── IMPROVEMENT_PLAN.md     # 改进空间与建议
+└── localServer.bat         # 本地服务器（serve 验证页）
 ```
 
 构建：`npm run build` 或 `build\build_all.bat`。改 UI 只动 `src/index.html` + `src/js/ui.js`，其余勿改（构建时统一压缩/改名）。
@@ -180,23 +184,24 @@ node node_level_compiler.js     # 编译所有关卡
 
 ## 精灵图工作流
 
-游戏使用双色像素精灵图，通过 Python 脚本合成：
+游戏使用双色像素精灵图，通过 Python 脚本合成（仅陷阱贴图用位图；玩家为程序绘制，不走此流程）：
 
 1. 将 `.png` 素材放入 `bmp_combiner/processing_images/`
-2. 运行 `combine.bat` 生成 `img.bin` 和 `img.bin.index`
-3. 将生成的 `img.bin` / `img.bin.index` 复制到项目根目录
-
-游戏启动时通过 `img.bin` + `img.bin.index` 加载所有精灵帧并缓存。
+2. 运行 `combine.bat` 生成 `src/assets/img.bin`（16px 高单行横向排列，黑前景/透明背景）
+3. 各帧在 `img.bin` 中的矩形由 `src/js/utils.js` 的 `GAME_SpriteRects` 提供（无独立 index 文件）
+4. 打包后 `img.bin` 追加在单文件页尾，运行时按 `GAME_SpriteRects` 裁切并以关卡主题色重染
 
 ---
 
 ## 技术要点
 
-- **渲染**：Canvas 2D，像素级渲染（`imageRendering: pixelated`）
+- **渲染**：Canvas 2D，像素级渲染（`imageRendering: pixelated`）。1 tile = 16 逻辑 px，内部 **2× 渲染**（32 px/格）
+- **滚动镜头**：视口（`GAME_viewW/H`）随窗口自适应（默认约 20×12 格，最大整关 32×16），相机以玩家碰撞箱中心为焦点并钳制在地图内；相机每帧按 `gameCamFollow` **指数缓动**（~10/s）平滑跟随，重生/换关等瞬移时立即对齐
 - **音效**：Web Audio API，程序化生成（OscillatorNode），无外部音频文件
-- **关卡存储**：自定义位流编码，MSB-first，支持半步/四分之一步精度坐标
-- **配色生成**：基于种子的 HSL 算法，确保每局色彩一致
+- **关卡存储**：自定义位流编码，MSB-first，支持半步/四分之一步精度坐标；36 关合并为单一 `lvl.bin`（u8 长度前缀，指针式加载）
+- **关卡配色**：陷阱位图用关卡主题色重染；拿冠后逐章 `desaturateColor` 褪色
 - **循环体系**：通关最后一关（12-2）轮回到 1-1（普通轮回）；打通隐藏关获得王冠（ crowned cycle）
+- **体积**：单文件交付 `fallen_rainbow.zip` ≤ **13312 B** 硬约束（roadroller + zopfli）
 
 ---
 
