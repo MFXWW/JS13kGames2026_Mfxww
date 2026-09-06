@@ -14,7 +14,8 @@ destination dest1 4 12
 :script
 wait player-in-area 11 5 1 2
 move bh1 12 6.5 0.25
-wait player-in-area 28 5 1 2
+wait player-in-area 27 5 2 2
+wait for-seconds 0.5
 move fr1 26 9 0.25 -block
 move fr2 20 7 0.25
 wait for-seconds 1

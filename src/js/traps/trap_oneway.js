@@ -62,10 +62,4 @@ function onewayRender(id, ctx) {
   ctx.lineTo(px + pw, py);
   ctx.stroke();
   ctx.restore();
-
-  // 半透明辅助线（微弱的薄片厚度提示）
-  ctx.fillStyle = trap.cl;
-  ctx.globalAlpha = 0.08;
-  ctx.fillRect(px, py, pw, tileSize);
-  ctx.globalAlpha = 1.0;
 }

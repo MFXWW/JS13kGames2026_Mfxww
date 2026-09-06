@@ -46,19 +46,31 @@ let PLAYER_collision = {
 }
 // 黑洞吸入等仍用红色碰撞箱表现
 const PLAYER_COLOR = '#ff0000';
-// 独角兽矢量精灵（移植 tools/unicorn_canvas）
-let PLAYER_face = 1;   // 朝向 1=朝右 -1=朝左
-let PLAYER_runPh = 0;  // 奔跑步态相位
-const UC_S = 0.35;        // 缩放槽位：1 设计像素=1 原生像素（待微调）
-const UC_EYE_MIN = 2;     // 眼睛在屏幕上至少占的真实(物理)像素数（按放大倍率动态换算）
-const UC_BW = 26, UC_BH = 20, UC_LL = 22, UC_SW = 0.22, UC_BB = 1.3, UC_RF = 10;
-const UC_CB = '#000', UC_CH = '#000', UC_Ho = '#fff';
-const UC_CLF = '#000', UC_CLN = '#000', UC_CE = '#fff', UC_OL = 'rgba(0,0,0,0.15)';
-// 腿表：[髋x, 近侧?, 后腿=-1/前腿=1, 对角相位组]
-const UC_LG = [[-8, 0, -1, 1], [-6.5, 1, -1, 0], [6.5, 0, 1, 0], [8, 1, 1, 1]];
-// 离屏精灵画布（矢量→像素最近采样用）
-let UC_sp = null;
-const UC_SPW = 88, UC_SPH = 100;
+let PLAYER_face = 1; // 朝向 1=朝右 -1=朝左（移动时更新，决定角/眼朝前哪侧）
+// DEBUG: B 键切换是否高亮真实碰撞箱（正式构建由 --define 剔除）
+let GAME_showBox = false;
+
+// 幽灵独角兽像素形象（tools/unicorn_soul/unicorn.png 24x32 → 等比 0.5 缩放 12x16）
+// 空心描边剪影：内部镂空透底色，镂空处保留原画的两只点状眼
+const SOUL_W = 12, SOUL_H = 16;
+const SOUL_P = [
+    '........##..',
+    '........##..',
+    '.......###..',
+    '..########..',
+    '.##......##.',
+    '.#........#.',
+    '.#..#..##.#.',
+    '.#........#.',
+    '.#........#.',
+    '.#........#.',
+    '.#........#.',
+    '.#.###....##',
+    '.#...#.....#',
+    '##.###....##',
+    '#........##.',
+    '##########..',
+];
 
 /**
  * 设置玩家位置（替代原setPosition方法）
@@ -117,10 +129,9 @@ function player_tick(deltaTime) {
 
     let dx = player_getDX(deltaTime);
     let dy = player_getDY(deltaTime);
-    // 矢量独角兽：朝向 + 奔跑步态推进（仅地面移动时）
+    // 更新朝向（决定幽灵头/角朝前哪侧）
     const ax = (actions.right ? 1 : 0) - (actions.left ? 1 : 0);
     if (ax) PLAYER_face = ax;
-    if (ax && player_isOnGround()) PLAYER_runPh += deltaTime * UC_RF;
     return player_updatePosition(dx, dy);
 }
 
@@ -338,117 +349,38 @@ const PLAYER_CROWN_PIXELS = [
 ];
 
 /**
- * 在角色头顶绘制像素王冠
+ * 在角色头顶绘制像素王冠（含脉动光晕）
  * @param {CanvasRenderingContext2D} ctx
- * @param {number} drawX - 角色精灵左边缘（世界像素）
- * @param {number} drawY - 角色精灵顶边（世界像素）
- * @param {number} drawW - 角色精灵宽度（世界像素）
+ * @param {number} drawX - 占位矩形左边缘（世界像素）
+ * @param {number} drawY - 占位矩形顶边（世界像素）
+ * @param {number} drawW - 占位矩形宽度（世界像素）
  */
-/**
- * 独角兽：在“身体中心为原点、已按朝向/重力镜像、局部 +y 向下”的坐标系里整只画出。
- * 姿态读实时状态：待机呼吸 / 地面移动摆腿 / 滞空收张腿。
- * @param {CanvasRenderingContext2D} ctx - 已变换到身体中心原点的上下文
- */
-function UC_draw(ctx) {
+function player_renderCrown(ctx, drawX, drawY, drawW) {
     const t = performance.now() / 1e3;
-    const ground = player_isOnGround();
-    const ax = (actions.right ? 1 : 0) - (actions.left ? 1 : 0);
-    if (ax) PLAYER_face = ax;
-    // 待机：腿不在离屏画，改由 player_render 在主画布直接画两条 3px 整数腿
-    const idle = ground && !ax;
-    let lean = 0.02, bob = 0, k = 1;
-    const A = [0, 0, 0, 0];
-    if (!ground) {
-        // 滞空：上升段随减速张开；顶点与整段坠落保持双腿前后分开
-        const rising = PLAYER_vy * PLAYER_gravityDir < 0;
-        const u = rising ? 1 - Math.min(1, Math.abs(PLAYER_vy) / 9) : 1;
-        for (let i = 4; i--;) A[i] = UC_LG[i][2] * u * 0.55;
-        k = 1 - 0.35 * u;
-        lean = 0.1;
-    } else if (ax) {
-        // 奔跑：腿近乎竖直小摆（避免斜线栅格化导致前后腿粗细抖动），用明显身体起伏表现奔跑
-        const w = PLAYER_runPh;
-        bob = Math.abs(Math.sin(w)) * UC_BB;
-        lean = 0.1;
-        for (let i = 4; i--;) A[i] = Math.sin(w + (UC_LG[i][2] < 0 ? Math.PI : 0)) * UC_SW;
-    }
-    // 待机：无动作（静止直立，不呼吸起伏/不摆腿）
-    const pn = (pts, c) => {
-        ctx.beginPath();
-        ctx.moveTo(pts[0][0], pts[0][1]);
-        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
-        ctx.closePath();
-        ctx.fillStyle = c;
-        ctx.fill();
-        ctx.strokeStyle = UC_OL;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-    };
-    const ln = (x1, y1, x2, y2, c, w) => {
-        ctx.strokeStyle = c;
-        ctx.lineWidth = w;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-    };
-    // 全身：起伏上浮 + 绕髋部（身体底）前倾
-    ctx.translate(0, -bob);
-    ctx.translate(0, UC_BH / 2);
-    ctx.rotate(lean);
-    ctx.translate(0, -UC_BH / 2);
-    // 腿（远/近）——待机由 player_render 主画布直画 3px 整数腿，离屏不画
-    if (!idle) {
-        // 远侧腿（身后）
-        for (let i = 4; i--;) {
-            const L = UC_LG[i];
-            if (L[1]) continue;
-            ln(L[0], UC_BH / 2, L[0] + Math.sin(A[i]) * UC_LL * k, UC_BH / 2 + Math.cos(A[i]) * UC_LL * k, UC_CLF, 6);
+    const hue = (t / PLAYER_CROWN_CYCLE_SECONDS * 360) % 360;
+    const gw = PLAYER_CROWN_PIXELS[0].length;
+    const gh = PLAYER_CROWN_PIXELS.length;
+    const cs = Math.max(1, Math.round(drawW * 0.5 / gw));
+    const crownW = gw * cs, crownH = gh * cs;
+    const px = Math.round(drawX + (drawW - crownW) / 2);
+    const py = Math.round(drawY - crownH);
+    for (let y = 0; y < gh; y++)
+        for (let x = 0; x < gw; x++) {
+            const ch = PLAYER_CROWN_PIXELS[y][x];
+            if (ch === '.') continue;
+            ctx.fillStyle = ch === 'W' ? '#ffffff' : `hsl(${hue}, 90%, 55%)`;
+            ctx.fillRect(px + x * cs, py + y * cs, cs, cs);
         }
-    }
-    // 脖子（粗壮、从肩明显前倾到头下，避免细直长颈）
-    pn([[0, -3], [11, -3], [17, -16], [5, -17]], UC_CB);
-    // 头：朝前上斜伸的尖头，口鼻在前（贴近身体上方，不像长颈怪）
-    pn([[8, -20], [25, -16], [10, -8]], UC_CH);
-    // 角：头顶前部朝右上前
-    pn([[14, -18], [18, -18], [16.5, -25]], UC_Ho);
-    // 身体（方形块，盖住颈根）
-    pn([[-13, -10], [13, -10], [13, 10], [-13, 10]], UC_CB);
-    // 近侧腿（身前）
-    if (!idle) {
-        for (let i = 4; i--;) {
-            const L = UC_LG[i];
-            if (!L[1]) continue;
-            ln(L[0], UC_BH / 2, L[0] + Math.sin(A[i]) * UC_LL * k, UC_BH / 2 + Math.cos(A[i]) * UC_LL * k, UC_CLN, 6);
-        }
-    }
-    // 王冠：位于头部前上方（含脉动光晕）
-    if (GAME_hasCrown) {
-        const hue = (t / PLAYER_CROWN_CYCLE_SECONDS * 360) % 360;
-        const gw = PLAYER_CROWN_PIXELS[0].length;
-        const gh = PLAYER_CROWN_PIXELS.length;
-        const cs = Math.max(1, Math.round(UC_S * 1.5));
-        const px0 = 16 - gw * cs / 2;
-        const py0 = -20 - (gh - 1) * cs;
-        for (let y = 0; y < gh; y++) {
-            for (let x = 0; x < gw; x++) {
-                const ch = PLAYER_CROWN_PIXELS[y][x];
-                if (ch === '.') continue;
-                ctx.fillStyle = ch === 'W' ? '#ffffff' : `hsl(${hue}, 90%, 55%)`;
-                ctx.fillRect(px0 + x * cs, py0 + y * cs, cs, cs);
-            }
-        }
-        ctx.globalAlpha = 0.4 + 0.35 * Math.sin(t * 9);
-        ctx.strokeStyle = `hsl(${hue}, 100%, 70%)`;
-        ctx.lineWidth = cs;
-        ctx.strokeRect(px0 - cs, py0 - cs, gw * cs + 2 * cs, gh * cs + 2 * cs);
-        ctx.globalAlpha = 1;
-    }
+    ctx.globalAlpha = 0.4 + 0.35 * Math.sin(t * 9);
+    ctx.strokeStyle = `hsl(${hue}, 100%, 70%)`;
+    ctx.lineWidth = cs;
+    ctx.strokeRect(px - cs, py - cs, crownW + 2 * cs, crownH + 2 * cs);
+    ctx.globalAlpha = 1;
 }
 
 /**
- * 渲染玩家（替代原render方法）：矢量独角兽替换红色碰撞箱
- * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * 渲染玩家（幽灵独角兽）：unicorn_soul 像素剪影——空心头部+角，镂空透底色
+ * @param {CanvasRenderingContext2D} ctx - 已含相机 2× 变换的画布上下文
  */
 function player_render(ctx) {
     if (GAME_awaitingRespawn) return;
@@ -459,75 +391,56 @@ function player_render(ctx) {
         return;
     }
 
-    // 世界坐标即原生像素（1 tile=16px）；脚锚定在重力方向的着地侧
     const ts = GAME_tileSize, c = PLAYER_collision, dir = PLAYER_gravityDir;
+    const px = c.x * ts, pw = c.width * ts;
+    // 逆重力端(头顶)的盒缘；头与角都从这端向“上”伸出
+    const yU = dir > 0 ? c.y * ts : (c.y + c.height) * ts;
+    // 幽灵悬浮：贴图沿“离开地面/天花板”方向轻微上浮(0..1 世界px≈设备2px)，物理盒不动
+    const yF = yU - dir * (Math.sin(performance.now() / 1e3 * 3.5) + 1) / 2;
+
+    // ---- 像素形象：把 SOUL 剪影画进碰撞箱（每格 1 设计行/列 → k×k 设备px）----
+    // 头部/角在逆重力端，随 PLAYER_face 水平镜像，随 dir 反向伸入重力侧；
+    // 水平相对碰撞箱居中（等比 12 格 > 盒 10 格 → 左右各超出约 1 格=2px）
+    const k = Math.max(1, Math.round(pw * 2 / SOUL_W));
+    const tf = ctx.getTransform();
+    // 水平居中于碰撞箱：等比 12 格(24px) > 盒 10 格(20px) → 左右各超出 2px
+    const dX0 = Math.round(px * tf.a + tf.e) - (SOUL_W * k - pw * 2) / 2;
+    const dyU = Math.round(yF * tf.a + tf.f);
     ctx.save();
-    ctx.translate((c.x + c.width / 2) * ts, (dir > 0 ? c.y + c.height : c.y) * ts);
-    ctx.scale(UC_S * PLAYER_face, dir > 0 ? UC_S : -UC_S);
-    ctx.translate(0, -UC_BH / 2 - UC_LL);
-    // 矢量先画进离屏精灵（1 设计像素=1 精灵像素），再最近采样贴回主画布，去掉边缘抗锯齿渐变
-    if (!UC_sp) {
-        UC_sp = document.createElement('canvas');
-        UC_sp.width = UC_SPW;
-        UC_sp.height = UC_SPH;
-    }
-    const sc = UC_sp.getContext('2d');
-    sc.setTransform(1, 0, 0, 1, 0, 0);
-    sc.clearRect(0, 0, UC_SPW, UC_SPH);
-    sc.translate(UC_SPW / 2, UC_SPH / 2);
-    UC_draw(sc);
-    // 量化精灵像素为纯黑/纯白/透明：消除矢量抗锯齿留下的半透明过渡像素
-    UC_quantize();
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(UC_sp, -UC_SPW / 2, -UC_SPH / 2);
-    // 待机：直接在主画布画两条 3px 竖直黑腿（整数对齐，无缩放→宽恒定）
-    if (player_isOnGround() && !((actions.right ? 1 : 0) - (actions.left ? 1 : 0))) {
-        const tf = ctx.getTransform();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        const fax = (c.x + c.width / 2) * ts;
-        const fa = (dir > 0 ? c.y + c.height : c.y) * ts;
-        const yB = Math.round(fa);
-        const Lh = Math.round(UC_LL * UC_S) + 2;
-        const yT = dir > 0 ? yB - Lh : yB;
-        ctx.fillStyle = UC_CLN;
-        // 后近腿 / 前近腿
-        ctx.fillRect(Math.round(fax - 6.5 * UC_S * PLAYER_face) - 1, yT, 3, Lh);
-        ctx.fillRect(Math.round(fax + 8 * UC_S * PLAYER_face) - 1, yT, 3, Lh);
-        ctx.setTransform(tf);
-    }
-    // 眼睛：按真实屏像素动态定最小尺寸（内部 1px = k*dpr 真实像素），保证 ≥UC_EYE_MIN 真实像素且尽量小
-    {
-        const tf = ctx.getTransform();
-        const ex = tf.a * 17 + tf.c * -13.5 + tf.e;
-        const ey = tf.b * 17 + tf.d * -13.5 + tf.f;
-        const real = GAME_scaleK * (window.devicePixelRatio || 1);
-        const es = Math.max(1, Math.ceil(UC_EYE_MIN / real));
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.fillStyle = UC_CE;
-        ctx.fillRect(Math.round(ex - es / 2), Math.round(ey - es / 2), es, es);
-        ctx.setTransform(tf);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#000';
+    for (let r = 0; r < SOUL_H; r++) {
+        const yy = dyU + (dir > 0 ? r : -r) * k;
+        const row = SOUL_P[r];
+        for (let cc = 0; cc < SOUL_W; cc++) {
+            if (row.charCodeAt(cc) === 46) continue; // '.'
+            const xx = dX0 + (PLAYER_face > 0 ? cc : SOUL_W - 1 - cc) * k;
+            ctx.fillRect(xx, yy, k, k);
+        }
     }
     ctx.restore();
-}
 
-// 读回精灵并逐像素量化（硬边像素马）
-function UC_quantize() {
-    const sc = UC_sp.getContext('2d');
-    const img = sc.getImageData(0, 0, UC_SPW, UC_SPH);
-    const d = img.data;
-    for (let i = 0; i < d.length; i += 4) {
-        const a = d[i + 3];
-        if (a < 128) { d[i + 3] = 0; continue; }
-        d[i + 3] = 255;
-        const v = (d[i] + d[i + 1] + d[i + 2]) / 3 > 160 ? 255 : 0;
-        d[i] = v; d[i + 1] = v; d[i + 2] = v;
+    // 王冠戴在头顶（逆重力端）
+    if (GAME_hasCrown) player_renderCrown(ctx, px, yF, pw);
+
+    // DEBUG：B 键高亮真实碰撞箱（正式构建由 --define 剔除）
+    if (DEBUG && GAME_showBox) {
+        const bx = Math.round(c.x * ts * tf.a + tf.e);
+        const by = Math.round(c.y * ts * tf.a + tf.f);
+        const bw = Math.round(c.width * ts * tf.a);
+        const bh = Math.round(c.height * ts * tf.a);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = PLAYER_COLOR;
+        ctx.fillRect(bx, by, bw, 1);
+        ctx.fillRect(bx, by + bh - 1, bw, 1);
+        ctx.fillRect(bx, by, 1, bh);
+        ctx.fillRect(bx + bw - 1, by, 1, bh);
     }
-    sc.putImageData(img, 0, 0);
 }
 
 /**
- * 黑洞吸入渲染：红色碰撞箱从起点逐渐缩小并移向洞心
- * @param {CanvasRenderingContext2D} ctx
+ * 黑洞吸入渲染：幽灵贴图随插值移向洞心并整体缩小至消失
+ * @param {CanvasRenderingContext2D} ctx - 已含相机 2× 变换的画布上下文
  */
 function player_renderSuck(ctx) {
     const s = GAME_blackHoleSuck;
@@ -538,11 +451,22 @@ function player_renderSuck(ctx) {
     if (!trap) return;
     const toX = trap.c.x + trap.c.width / 2;
     const toY = trap.c.y + trap.c.height / 2;
-    const cx = (s.fromX + (toX - s.fromX) * p) * ts;
+    const cx = (s.fromX + (toX - s.fromX) * p) * ts;   // 中心插值（逻辑px）
     const cy = (s.fromY + (toY - s.fromY) * p) * ts;
-    const w = PLAYER_collision.width * ts * (1 - p);
-    const h = PLAYER_collision.height * ts * (1 - p);
-    if (w < 1 || h < 1) return;
-    ctx.fillStyle = PLAYER_COLOR;
-    ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
+    const sc = Math.max(0.02, 1 - p);                  // 整体缩小至消失
+    const dir = PLAYER_gravityDir;
+    // 贴图设计格=1 逻辑px（2× 变换下自然放大到 2px/格），绕中心 scale 缩放
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(sc, sc);
+    ctx.fillStyle = '#000';
+    for (let r = 0; r < SOUL_H; r++) {
+        const row = SOUL_P[r];
+        const rr = dir > 0 ? r - SOUL_H / 2 : SOUL_H / 2 - r; // 角始终在逆重力端
+        for (let cc = 0; cc < SOUL_W; cc++) {
+            if (row.charCodeAt(cc) === 46) continue; // '.'
+            ctx.fillRect(cc - SOUL_W / 2, rr, 1, 1);
+        }
+    }
+    ctx.restore();
 }

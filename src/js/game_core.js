@@ -54,6 +54,11 @@ document.addEventListener('keydown', (e) => {
         gameLoadLevel((GAME_currentLevelIndex + 1) % levels.length);
         return;
     }
+    // DEBUG: B 键切换玩家碰撞箱高亮（仅 DEBUG 构建）
+    if (DEBUG && (e.key === 'b' || e.key === 'B')) {
+        GAME_showBox = !GAME_showBox;
+        return;
+    }
     if (GAME_awaitingRespawn && (e.key === ' ' || e.code === 'Space')) {
         gameRetry();
         return;
@@ -182,6 +187,11 @@ let GAME_scaleK = 1;    // 画布整数放大倍数（内部像素→CSS像素�
 // map
 let GAME_mapWidth = 32;
 let GAME_mapHeight = 16;
+// 视口(格)与相机(格, 玩家居中并钳制在地图内)
+let GAME_viewW = 20;
+let GAME_viewH = 12;
+let GAME_camX = 0;
+let GAME_camY = 0;
 
 // 合并关卡缓存（lvl.bin + 各关偏移表，指针式加载）
 let GAME_lvlBuffer = null;    // lvl.bin 的 ArrayBuffer
@@ -286,23 +296,34 @@ function gamePlayGlitch() {
  * 画布自适应（替代原 _resizeCanvas 方法）
  */
 function gameResizeCanvas() {
-    // 设置画布内部分辨率（绘制分辨率 = 原生贴图像素）
-    GAME_canvas.width = GAME_mapWidth * GAME_tileSize;
-    GAME_canvas.height = GAME_mapHeight * GAME_tileSize;
-    if (GAME_worldCanvas) {
-        GAME_worldCanvas.width = GAME_canvas.width;
-        GAME_worldCanvas.height = GAME_canvas.height;
-    }
-
-    // 通过 CSS 整数倍放大画布：每个内部像素 = k×k 屏幕像素，避免非整数缩放导致像素破碎
+    // 物理仍 1 tile=16 逻辑px；渲染 2× → 每格 32 内部(画布)像素
+    const pp = GAME_tileSize * 2;
     const maxW = window.innerWidth * 0.9;
     const maxH = window.innerHeight * 0.8;
-    let k = Math.floor(Math.min(maxW / GAME_canvas.width, maxH / GAME_canvas.height));
-    if (k < 1) k = 1;
+    // CSS 整数放大优先 2；若放不下最小视口则退回 1
+    let k = 2;
+    let vw = Math.floor(maxW / (pp * k));
+    let vh = Math.floor(maxH / (pp * k));
+    if (vw < 14 || vh < 9) {
+        k = 1;
+        vw = Math.floor(maxW / (pp * k));
+        vh = Math.floor(maxH / (pp * k));
+    }
+    vw = Math.max(10, Math.min(vw, GAME_mapWidth));
+    vh = Math.max(6, Math.min(vh, GAME_mapHeight));
+    GAME_viewW = vw;
+    GAME_viewH = vh;
+    const W = vw * pp, H = vh * pp;
+    GAME_canvas.width = W;
+    GAME_canvas.height = H;
+    if (GAME_worldCanvas) {
+        GAME_worldCanvas.width = W;
+        GAME_worldCanvas.height = H;
+    }
     GAME_scaleK = k;
-    GAME_canvas.style.width = GAME_canvas.width * k + 'px';
-    GAME_canvas.style.height = GAME_canvas.height * k + 'px';
-    // 像素画面（避免全屏放大时变糊）
+    GAME_canvas.style.width = W * k + 'px';
+    GAME_canvas.style.height = H * k + 'px';
+    // 像素画面（避免放大变糊）
     GAME_canvas.style.imageRendering = 'pixelated';
 }
 
@@ -345,7 +366,8 @@ function gameLoadLevelData(levelIndex) {
 
     return Promise.all([
         gameEnsureLvlLoaded(),
-        initializeSpriteFramesFromBinFile('img.bin', fg, bg, GAME_SpriteRects)
+        // 陷阱贴图背景用透明（设计意图“黑前景+透明背景”），避免不透明卡片遮住背景/雾
+        initializeSpriteFramesFromBinFile('img.bin', fg, 'rgba(0,0,0,0)', GAME_SpriteRects)
     ])
     .then(([lvlBuf, spriteCache]) => {
         GAME_SpriteFrameCache = spriteCache;
@@ -549,25 +571,61 @@ function gameTick(deltaTime) {
 /** 视差远景（已移除：本作无相机、前景不移动，错层背景无意义） */
 
 /**
+ * 背景流体雾：数团径向渐变慢漂（锚定世界坐标，镜头滚动时随地形，不贴镜头）
+ * 亮背景用暗雾、暗背景用淡雾；低透明，不遮瓦片可读性
+ */
+function gameFog() {
+    const g = GAME_worldContext, ts = GAME_tileSize;
+    const t = performance.now() / 1e3;
+    const mw = GAME_mapWidth * ts, mh = GAME_mapHeight * ts;
+    for (let i = 4; i--;) {
+        const x = mw * (i & 1 ? .8 : .2) + Math.sin(t * .07 + i) * mw * .05;
+        const y = mh * (i >> 1 ? .75 : .25) + Math.cos(t * .09 + i * 2) * mh * .07;
+        const r = mh * .5;
+        const gr = g.createRadialGradient(x, y, 0, x, y, r);
+        gr.addColorStop(0, 'rgba(255,255,255,.26)');
+        gr.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = gr;
+        g.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+}
+
+/**
  * 渲染帧（替代原 render 方法）
  * 世界与玩家红色碰撞箱都以原生像素渲染（1 tile = 16px，与贴图一致）
  */
 function gameRender() {
+    // 相机：以玩家碰撞箱中心为焦点，钳制在地图范围内
+    const pc = PLAYER_collision;
+    let cx = pc.x + pc.width / 2 - GAME_viewW / 2;
+    let cy = pc.y + pc.height / 2 - GAME_viewH / 2;
+    cx = Math.max(0, Math.min(cx, GAME_mapWidth - GAME_viewW));
+    cy = Math.max(0, Math.min(cy, GAME_mapHeight - GAME_viewH));
+    GAME_camX = cx;
+    GAME_camY = cy;
+    // 物理 1 tile=16；渲染 2×：世界 px(格*16) → 画布 px(*2)，再按相机平移
+    // 偏移取整到画布像素，避免亚像素导致相邻瓦片间出现细缝
+    const ts = GAME_tileSize, pp = ts * 2, ox = Math.round(cx * pp), oy = Math.round(cy * pp);
     const wctx = GAME_worldContext;
     wctx.setTransform(1, 0, 0, 1, 0, 0);
     wctx.imageSmoothingEnabled = false;
     wctx.fillStyle = GAME_backgroundColor;
     wctx.fillRect(0, 0, GAME_worldCanvas.width, GAME_worldCanvas.height);
+    // 世界层：放大 2× + 平移使相机位于左上（世界各渲染函数坐标不变）
+    wctx.setTransform(2, 0, 0, 2, -ox, -oy);
+    gameFog();
     trapManagerRender(wctx);
     blackHoleTrailRender(wctx);
     gamemap_render(wctx);
     renderRingExplosion(wctx);
-    // 迁移像素化世界图到可见画布（1:1，保持锐利）
+    // 迁移像素化世界图到可见画布（1:1）
     GAME_ctx.setTransform(1, 0, 0, 1, 0, 0);
     GAME_ctx.imageSmoothingEnabled = false;
     GAME_ctx.drawImage(GAME_worldCanvas, 0, 0);
-    // 玩家红色碰撞箱叠加在可见画布上
+    // 玩家：在可见画布上按相机 2× 变换绘制（叠加于世界之上）
+    GAME_ctx.setTransform(2, 0, 0, 2, -ox, -oy);
     player_render(GAME_ctx);
+    GAME_ctx.setTransform(1, 0, 0, 1, 0, 0);
     // 死亡 glitch：死亡瞬间世界画面水平错位闪烁（渐弱）
     if (GAME_awaitingRespawn) {
         const t = (performance.now() - GAME_deathAt) / 1000;
