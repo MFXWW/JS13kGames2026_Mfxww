@@ -83,6 +83,7 @@ function player_setPosition(x, y) {
     PLAYER_vy = 0;
     PLAYER_collision.width = PLAYER_size_width;
     PLAYER_collision.height = PLAYER_size_height;
+    gameCamFollow(0); // 瞬移/重生/换关：相机立即对齐新位置，避免缓动横扫
 }
 
 /**

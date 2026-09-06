@@ -192,6 +192,7 @@ let GAME_viewW = 20;
 let GAME_viewH = 12;
 let GAME_camX = 0;
 let GAME_camY = 0;
+const GAME_CAM_RATE = 10;   // 镜头缓动速率(1/s)：越大贴得越快
 
 // 合并关卡缓存（lvl.bin + 各关偏移表，指针式加载）
 let GAME_lvlBuffer = null;    // lvl.bin 的 ArrayBuffer
@@ -544,6 +545,7 @@ function gameLoop() {
  */
 function gameTick(deltaTime) {
     if (GAME_crownMoment) return; // 得冠瞬间定格（仅渲染，逻辑暂停）
+    gameCamFollow(deltaTime);     // 镜头缓动跟随玩家
     player_tick(deltaTime);
     
     // 陷阱更新
@@ -571,6 +573,27 @@ function gameTick(deltaTime) {
 /** 视差远景（已移除：本作无相机、前景不移动，错层背景无意义） */
 
 /**
+ * 镜头缓动：焦点=玩家碰撞箱中心，向钳制后目标指数趋近（帧率无关）
+ * dt>0 平滑跟随；dt===0 直接对齐（瞬移/重生/换关，供 player_setPosition 调用）
+ */
+function gameCamFollow(dt) {
+    const pc = PLAYER_collision;
+    let x = pc.x + pc.width / 2 - GAME_viewW / 2;
+    let y = pc.y + pc.height / 2 - GAME_viewH / 2;
+    const mx = GAME_mapWidth - GAME_viewW, my = GAME_mapHeight - GAME_viewH;
+    x = x < 0 ? 0 : x > mx ? mx : x;
+    y = y < 0 ? 0 : y > my ? my : y;
+    if (dt > 0) {
+        const f = 1 - Math.exp(-dt * GAME_CAM_RATE);
+        GAME_camX += (x - GAME_camX) * f;
+        GAME_camY += (y - GAME_camY) * f;
+    } else {
+        GAME_camX = x;
+        GAME_camY = y;
+    }
+}
+
+/**
  * 背景流体雾：数团径向渐变慢漂（锚定世界坐标，镜头滚动时随地形，不贴镜头）
  * 亮背景用暗雾、暗背景用淡雾；低透明，不遮瓦片可读性
  */
@@ -595,17 +618,8 @@ function gameFog() {
  * 世界与玩家红色碰撞箱都以原生像素渲染（1 tile = 16px，与贴图一致）
  */
 function gameRender() {
-    // 相机：以玩家碰撞箱中心为焦点，钳制在地图范围内
-    const pc = PLAYER_collision;
-    let cx = pc.x + pc.width / 2 - GAME_viewW / 2;
-    let cy = pc.y + pc.height / 2 - GAME_viewH / 2;
-    cx = Math.max(0, Math.min(cx, GAME_mapWidth - GAME_viewW));
-    cy = Math.max(0, Math.min(cy, GAME_mapHeight - GAME_viewH));
-    GAME_camX = cx;
-    GAME_camY = cy;
-    // 物理 1 tile=16；渲染 2×：世界 px(格*16) → 画布 px(*2)，再按相机平移
-    // 偏移取整到画布像素，避免亚像素导致相邻瓦片间出现细缝
-    const ts = GAME_tileSize, pp = ts * 2, ox = Math.round(cx * pp), oy = Math.round(cy * pp);
+    // 相机由 gameCamFollow 每帧更新（缓动），此处仅按当前 GAME_camX/Y 取整偏移
+    const ts = GAME_tileSize, pp = ts * 2, ox = Math.round(GAME_camX * pp), oy = Math.round(GAME_camY * pp);
     const wctx = GAME_worldContext;
     wctx.setTransform(1, 0, 0, 1, 0, 0);
     wctx.imageSmoothingEnabled = false;
