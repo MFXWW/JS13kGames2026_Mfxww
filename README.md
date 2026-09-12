@@ -9,7 +9,7 @@
 
 穿过 12 章的常规关卡，在坠落尽头进入隐藏的第 13 章 **"The Abandoned Place"**。每一次死亡都是一次教训，每一次轮回都离真相更近一步。打通隐藏关可获得王冠，开启「 crowned cycle」。
 
-- **关卡总数**：36 关（常规 32 + 走廊 + 隐藏章 × 3，未完成关卡自动跳过）
+- **关卡总数**：35 关（常规 31 + 走廊 + 隐藏章 × 3）
 - **核心机制**：平台跳跃 + 机关解谜（浮板、按钮、蹦床、黑洞、单向平台等）
 - **视觉风格**：双色像素风（每章独特色彩主题）
 - **操作**：键盘 — `A/D` 或 `←/→` 移动，`W/空格/↑` 跳跃，`R` 自杀重来
@@ -37,6 +37,9 @@ python -m http.server 8000
 ### 编译（生产环境压缩）
 
 ```bash
+# 改了精灵图（陷阱/玩家）先重合成 img.bin
+npm run combine:sprites      # 或 cmd /c tools\bmp_combiner\combine.bat
+
 # 一键构建（dom_rename → terser → roadroller → 合并关卡 → 单文件 zip）
 npm run build        # 或直接运行 build\build_all.bat
 ```
@@ -72,8 +75,8 @@ npm run build        # 或直接运行 build\build_all.bat
 │   │   ├── copy.js / entities.js / utils.js / sound.js / traps.js
 │   │   └── traps/          # trap_bounce / trap_button / trap_blackhole / trap_destination / trap_floatrect / trap_oneway
 │   └── assets/             # 运行资源
-│       ├── img.bin         # 精灵图二进制（构建由 bmp_combiner 产出）
-│       └── lvl/            # lvl.bin：36 关合并（u8 长度前缀，指针式加载）
+│       ├── img.bin         # 精灵图二进制（构建由 bmp_combiner 产出：陷阱 + 玩家）
+│       └── lvl/            # lvl.bin：35 关合并 + 12-2 void 变体（u8 长度前缀，指针式加载）
 ├── build/                  # 构建脚本
 │   ├── build_all.bat       # 一键构建：dom_rename → terser → roadroller → lvl_combine → package_single
 │   ├── terser_compile.bat  # terser 压缩（读 src/js，产出 dist/game.min.js）
@@ -84,11 +87,10 @@ npm run build        # 或直接运行 build\build_all.bat
 │   └── COMPRESSION_PLAN.md # 压缩达标历程记录
 ├── tools/                  # 辅助工具
 │   ├── level_editor/       # 可视化关卡编辑器 + 文本→二进制编译器（含 level_sources/*.txt）
-│   ├── bmp_combiner/       # 精灵图合成（combine.bat 产出 src/assets/img.bin）
-│   ├── unicorn_soul/       # 玩家像素形象源（.aseprite + 渲染核对）
-│   ├── unicorn_canvas/     # 玩家矢量/像素动画原型（合入前验证）
-│   ├── colorGen.html       # 配色工具
-│   └── horse/              # 早期废稿（玩家形象已弃用）
+│   ├── bmp_combiner/       # 精灵图合成（combine.bat 产出 src/assets/img.bin：陷阱 112x16 + 玩家 24x24）
+│   ├── unicorn_soul/       # 玩家像素形象源（unicorn.aseprite + unicorn.png，combine.bat 的输入）
+│   ├── unicorn_canvas/     # 玩家矢量/像素动画原型（已合入，仅留参考）
+│   └── colorGen.html       # 配色工具
 ├── dist/                   # 构建产物
 │   ├── game.min.js / game.rolled.js   # 中间产物（terser / roadroller）
 │   ├── index.html          # 单文件版入口（JS 内联 + 尾部 img/lvl）
@@ -108,14 +110,14 @@ npm run build        # 或直接运行 build\build_all.bat
 
 ### 常规关卡（第 1~12 章）
 
-1-7 章与第 9 章每章 3 关，8、10~12 章每章 2 关，共 32 关。每章有独立的双色主题（未完成的关卡会在流程中自动跳过）：
+1~3、5~7、9 章每章 3 关，4、8、10~12 章每章 2 关，共 31 关。每章有独立的双色主题：
 
 | 章 | 关数 | 背景色 | 前景色 | 主题意象 |
 |----|------|--------|--------|----------|
 | 1  | 3 | 金色 | 棕色 | 初识 |
 | 2  | 3 | 紫色 | 亮紫 | 迷雾 |
 | 3  | 3 | 蓝色 | 深蓝 | 深渊 |
-| 4  | 3 | 红色 | 暗红 | 愤怒 |
+| 4  | 2 | 红色 | 暗红 | 愤怒 |
 | 5  | 3 | 绿色 | 深绿 | 欺骗 |
 | 6  | 3 | 橙色 | 赤褐 | 熔炉 |
 | 7  | 3 | 青色 | 墨绿 | 沉没 |
@@ -184,21 +186,26 @@ node node_level_compiler.js     # 编译所有关卡
 
 ## 精灵图工作流
 
-游戏使用双色像素精灵图，通过 Python 脚本合成（仅陷阱贴图用位图；玩家为程序绘制，不走此流程）：
+游戏使用双色像素精灵图，通过 Python 脚本合成。**陷阱与玩家同走这一条管线**（玩家剪影也是位图帧，运行时不再逐像素程序绘制）：
 
-1. 将 `.png` 素材放入 `bmp_combiner/processing_images/`
-2. 运行 `combine.bat` 生成 `src/assets/img.bin`（16px 高单行横向排列，黑前景/透明背景）
-3. 各帧在 `img.bin` 中的矩形由 `src/js/utils.js` 的 `GAME_SpriteRects` 提供（无独立 index 文件）
-4. 打包后 `img.bin` 追加在单文件页尾，运行时按 `GAME_SpriteRects` 裁切并以关卡主题色重染
+1. 陷阱 `.png` 素材放入 `tools/bmp_combiner/processing_images/`；玩家形象为 `tools/unicorn_soul/unicorn.png`（24×24，纯黑 + 透明）
+2. 运行 `tools\bmp_combiner\combine.bat`：
+   - `unify_images.py` 合成 **136×24** 统一贴图（陷阱 112×16 单行 + 玩家 24×24 接在 x=112），配色归一为黑前景/透明背景
+   - `combiner.py --row-width 136` 位压缩编码为 `src/assets/img.bin`（1 bit/像素，17 B/行）
+3. 各帧在 `img.bin` 中的矩形由 `src/js/utils.js` 的 `GAME_SpriteRects` 提供（无独立 index 文件）；玩家帧键为 `soul`，带 `fg:'#000000'` 覆盖（陷阱用关卡主题色重染，玩家恒黑）
+4. 打包后 `img.bin` 追加在单文件页尾，运行时按 `GAME_SpriteRects` 裁切成 `ImageBitmap` 缓存（`GAME_SpriteFrameCache`）
+
+> 只改玩家贴图也要重跑 `combine.bat`（`build_all.bat` 不会自动重跑），然后 `build_all.bat` 打包。
 
 ---
 
 ## 技术要点
 
 - **渲染**：Canvas 2D，像素级渲染（`imageRendering: pixelated`）。1 tile = 16 逻辑 px，内部 **2× 渲染**（32 px/格）
+- **玩家**：碰撞箱 `0.75 × 1.125` 格（12×18 逻辑 px）；贴图为 `img.bin` 中的 **24×24 剪影帧**，**1 源像素 = 1 逻辑 px**（2× 变换下即 2 设备 px，整数倍无小数缩放），**底边对齐碰撞箱底、水平居中于箱**，按 `PLAYER_face` 水平镜像、按 `PLAYER_gravityDir` 上下翻转
 - **滚动镜头**：视口（`GAME_viewW/H`）随窗口自适应（默认约 20×12 格，最大整关 32×16），相机以玩家碰撞箱中心为焦点并钳制在地图内；相机每帧按 `gameCamFollow` **指数缓动**（~10/s）平滑跟随，重生/换关等瞬移时立即对齐
 - **音效**：Web Audio API，程序化生成（OscillatorNode），无外部音频文件
-- **关卡存储**：自定义位流编码，MSB-first，支持半步/四分之一步精度坐标；36 关合并为单一 `lvl.bin`（u8 长度前缀，指针式加载）
+- **关卡存储**：自定义位流编码，MSB-first，支持半步/四分之一步精度坐标；35 关 + 12-2 void 变体合并为单一 `lvl.bin`（u8 长度前缀，指针式加载）
 - **关卡配色**：陷阱位图用关卡主题色重染；拿冠后逐章 `desaturateColor` 褪色
 - **循环体系**：通关最后一关（12-2）轮回到 1-1（普通轮回）；打通隐藏关获得王冠（ crowned cycle）
 - **体积**：单文件交付 `fallen_rainbow.zip` ≤ **13312 B** 硬约束（roadroller + zopfli）
