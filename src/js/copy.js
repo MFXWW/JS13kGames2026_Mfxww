@@ -24,11 +24,12 @@ const COPY = {
     // 过渡
     corridorLabel: '...',
     corridorSub: '???',
+    // 带冠轮回回到 1-1：得冠的欣喜 → 察觉记忆正在消散
+    crownRecall: 'Joy fills my breast. At last I have found it. The crown glows with resplendent radiance — surely this is my long-lost treasure.\n…Yet why do my memories dissolve away?',
+    // 带冠重访 13-1（Abandoned Place）
+    hiddenReturn: 'Once more I return. For my vanished hues, for my dwindling memories, I stand here again.\nThe more times I die, the more nutrients the crown gains.',
     hiddenLabel: (part) => `THE ABANDONED PLACE — ${part}/3`,
     hiddenSub: 'Something stirs in the dark…',
-    // 首次带冠进入 13-1 的揭示（仅该次替换 hiddenCrownedSub）
-    hiddenRevealSub: 'Now I understand why this place is called the Abandoned Place…\nI once knew the truth, yet I cast it aside.',
-    hiddenCrownedSub: 'When colors fade, black and white remain.',
     displayHidden: (part) => `The Abandoned Place ${part}/3`,
     cycleCrowned: 'the crowned journey begins…',
     cycleKept: (n) => `the colors have a keeper. cycle ${n}.`,

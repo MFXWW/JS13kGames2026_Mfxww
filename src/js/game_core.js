@@ -42,6 +42,12 @@ document.addEventListener('keydown', (e) => {
         }
         return;
     }
+    // 拿冠回归文案停留：按 SPACE 进入 1-1
+    if (GAME_crownWait) {
+        e.preventDefault();
+        if (e.key === ' ' || e.code === 'Space') gameCrownProceed();
+        return;
+    }
     // R 键自杀
     if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
@@ -228,10 +234,9 @@ let GAME_totalDeaths = 0;    // 拿冠后的永久死亡计数（cookie 持久�
 let GAME_crownChoicePending = false; // 13-3 丢冠抉择待响应
 let GAME_introPending = false; // 开场介绍待响应
 let GAME_endingShown = false;  // 真结局画面已展示
-let GAME_crownedKept = false;  // 玩家选择了保留王冠（坏循环）
 let GAME_crownedFirstDone = false; // 首次拿冠回归 1-1 已展示（区分 cycleCrowned/cycleKept）
-let GAME_hiddenCrownedRevealed = false; // 首次带冠进入 13-1 已展示揭示句（区分 hiddenRevealSub/hiddenCrownedSub）
 let GAME_crownMoment = false;  // 13-3 得冠瞬间定格中
+let GAME_crownWait = false;    // 拿冠回归 1-1 文案停留中（按 SPACE 继续）
 let GAME_deathAt = 0;          // 死亡时刻（死亡 glitch 时长基准）
 
 /** 读取 cookie 值（带 mfxww_game 标识的持久化数据） */
@@ -289,6 +294,17 @@ function gamePlayGlitch() {
     window.setTimeout(() => {
         uiOff(GAME_glitchOverlay);
     }, 950);
+}
+
+/** 拿冠回归文案停留结束：按 SPACE 揭示 1-1（RGB 故障） */
+function gameCrownProceed() {
+    if (!GAME_crownWait) return;
+    GAME_crownWait = false;
+    uiOff(GAME_transitionMessage);
+    uiOff(GAME_transitionOverlay);
+    uiVis(GAME_headerBar, true);
+    gameRefreshDeathCounter(); // 死亡计数此刻才亮相（放大回弹，黑幕外可见）
+    gamePlayGlitch();
 }
 
 // -------------------------- 原Game类方法重构为全局函数 --------------------------
@@ -431,6 +447,9 @@ function gameLoadLevel(levelIndex) {
             // 更新关卡信息
             GAME_levelDisplay.textContent = gameLevelDisplayName(levelIndex);
 
+            // 拿冠回归：文案停留，等按 SPACE 再揭示 1-1
+            if (GAME_crownWait) return;
+
             // 清除过渡动画
             uiOff(GAME_transitionMessage);
             window.setTimeout(() => {
@@ -544,7 +563,7 @@ function gameLoop() {
  * @param {number} deltaTime 帧间隔（秒）
  */
 function gameTick(deltaTime) {
-    if (GAME_crownMoment) return; // 得冠瞬间定格（仅渲染，逻辑暂停）
+    if (GAME_crownMoment || GAME_crownWait) return; // 得冠定格 / 回归文案停留（仅渲染，逻辑暂停）
     gameCamFollow(deltaTime);     // 镜头缓动跟随玩家
     player_tick(deltaTime);
     
@@ -693,20 +712,18 @@ function gameOnDestinationReached() {
             GAME_currentLevelIndex = 0;
             GAME_isNewCycle = true;
             GAME_hasCrown = true;
-            GAME_crownedKept = false;
             GAME_crownedCycles = 0;
-            GAME_hiddenCrownedRevealed = false; // 新一轮带冠可再次看到 13-1 揭示句
             GAME_totalDeaths = gameReadTotalDeaths();
-            gameRefreshDeathCounter(); // 显示右上角计数
+            // 计数不在定格/黑幕期间显示，留到 1-1 文案播完再亮相（见 gameCrownProceed）
             // 王冠音效 — C-E-G-C 上行琶音
             sfx(523, 0.35, 0.18, 0, 0.5, 0, -0.2);
             sfx(659, 0.35, 0.18, 0, 0.5, 0, 0, 130);
             sfx(784, 0.4, 0.25, 0, 0.5, 0, 0.2, 260);
             sfx(1047, 0.3, 0.5, 3, 0.3, 0, 0, 400);
-            // 王冠瞬间：回到出生点定格戴冠（王冠色相循环闪动 + 琶音），随后轮回
+            // 王冠瞬间：回到出生点定格戴冠（王冠色相循环闪动 + 琶音），随后进入 1-1 文案停留
             GAME_crownMoment = true;
             player_setPosition(sp.x, sp.y);
-            setTimeout(() => { GAME_crownMoment = false; gameLoadLevel(0); }, 800);
+            setTimeout(() => { GAME_crownMoment = false; GAME_crownWait = true; gameLoadLevel(0); }, 800);
             return; // 跳过底部立即转场
         }
     } else {
@@ -752,7 +769,6 @@ function gameCrownReturn() {
     GAME_crownChoicePending = false;
     bgmStop();
     GAME_hasCrown = false;
-    GAME_crownedKept = false;
     uiOff(GAME_crownChoiceOverlay);
     uiOn(GAME_transitionOverlay);
     uiOn(GAME_transitionMessage);
@@ -769,7 +785,6 @@ function gameCrownReturn() {
 function gameCrownKeep() {
     if (!GAME_crownChoicePending) return;
     GAME_crownChoicePending = false;
-    GAME_crownedKept = true;
     GAME_crownedCycles++;
     uiOff(GAME_crownChoiceOverlay);
     GAME_paused = false;
@@ -783,7 +798,6 @@ function gameCrownKeep() {
 function gameRestartAfterEnding() {
     GAME_endingShown = false;
     GAME_hasCrown = false;
-    GAME_crownedKept = false;
     GAME_crownedCycles = 0;
     GAME_crownedFirstDone = false;
     GAME_isNewCycle = false;
@@ -865,18 +879,14 @@ function gameBeginTransition(levelIndex) {
     } else if (levelIndex >= GAME_HIDDEN_START_INDEX) {
         const hiddenPart = levelIndex - GAME_HIDDEN_START_INDEX + 1;
         GAME_transitionLabel.textContent = COPY.hiddenLabel(hiddenPart);
-        // 带冠进入 13-1：首次展示 Abandoned Place 揭示句，之后回到褪色终局文案
-        if (GAME_hasCrown && levelIndex === GAME_HIDDEN_START_INDEX) {
-            GAME_transitionSub.textContent = GAME_hiddenCrownedRevealed ? COPY.hiddenCrownedSub : COPY.hiddenRevealSub;
-            GAME_hiddenCrownedRevealed = true;
-        } else {
-            GAME_transitionSub.textContent = COPY.hiddenSub;
-        }
+        // 带冠重访 13-1 是"我再次来到这里"的回归；无冠仍是最初的悬念句
+        GAME_transitionSub.textContent = GAME_hasCrown && levelIndex === GAME_HIDDEN_START_INDEX ? COPY.hiddenReturn : COPY.hiddenSub;
         sfx(130, 0.2, 0.45, 0, 0.35, 65);
         sfx(98, 0.12, 0.6, 3, 0.25);
     } else {
         GAME_transitionLabel.textContent = gameLevelDisplayName(levelIndex);
-        GAME_transitionSub.textContent = '';
+        // 拿冠轮回回到 1-1：欣喜 → 记忆消散（仅停留卡可读，故只在这张卡上写）
+        GAME_transitionSub.textContent = GAME_crownWait ? COPY.crownRecall : '';
     }
 
     // 轮回提示
@@ -885,7 +895,6 @@ function gameBeginTransition(levelIndex) {
             // 首次拿冠回归：cycleCrowned + RGB 故障；之后带冠轮回一律 keeper 文案
             if (!GAME_crownedFirstDone) {
                 GAME_crownedFirstDone = true;
-                window.setTimeout(gamePlayGlitch, 400);
                 GAME_transitionCycle.textContent = COPY.cycleCrowned;
             } else {
                 GAME_transitionCycle.textContent = COPY.cycleKept(GAME_crownedCycles + 1);

@@ -48,6 +48,7 @@ function uiInit() {
             if (!on) return actions[a] = false;
             if (GAME_introPending) return gameIntroDismiss();
             if (GAME_endingShown) return gameRestartAfterEnding();
+            if (GAME_crownWait) return gameCrownProceed();
             if (GAME_awaitingRespawn) return gameRetry();
             if (GAME_crownChoicePending) return a[0] == 'l' ? gameCrownReturn() : a[0] == 'r' && gameCrownKeep();
             actions[a] = true;
@@ -62,5 +63,5 @@ function uiInit() {
 /** 切换元素 active class：on=true 显示/加，false 隐藏/去 */
 function uiOn(el) { el.classList.add('active'); }
 function uiOff(el) { el.classList.remove('active'); }
-/** 切换元素 visible class（右上角死亡计数/顶栏显隐） */
+/** 切换元素 visible class（右上角死亡计数/顶栏显隐）——死亡计数带放大回弹性亮相 */
 function uiVis(el, on) { el.classList[on ? 'add' : 'remove']('visible'); }

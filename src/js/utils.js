@@ -12,8 +12,8 @@ function collideRect(rect1, rect2) {
 // ===================== 精灵帧加载（img.bin 位压缩 + 代码提供 rect） =====================
 let GAME_SpriteFrameCache = {};
 
-// 陷阱贴图在 img.bin 中的位置/尺寸（16px 高单行横向排列；独角兽玩家已移除，改为红色碰撞箱）
-// 陷阱使用关卡主题色渲染（位图为黑前景 / 透明背景）
+// 贴图在 img.bin 中的位置/尺寸（陷阱 112x16 单行；玩家剪影 24x24 接在右侧）
+// 陷阱使用关卡主题色渲染，玩家固定黑色（位图为黑前景 / 透明背景）
 const GAME_SpriteRects = {
     'black_hole1.png':      { x: 0,  y: 0, w: 16, h: 16 },
     'black_hole2.png':      { x: 16, y: 0, w: 16, h: 16 },
@@ -22,6 +22,7 @@ const GAME_SpriteRects = {
     'button_default.png':   { x: 64, y: 0, w: 16, h: 8 },
     'button_triggered.png': { x: 80, y: 0, w: 16, h: 8 },
     'destination.png':      { x: 96, y: 0, w: 16, h: 16 },
+    'soul':                 { x: 112, y: 0, w: 24, h: 24, fg: '#000000' },
 };
 
 function cssColorToRGBA(colorStr) {

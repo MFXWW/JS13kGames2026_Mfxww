@@ -76,7 +76,7 @@
         #transitionMessage .cycle-notice { font-size: 13px; letter-spacing: 2px; margin-top: 14px; color: #555; }
 
         #deathCounter { position: absolute; top: 8px; right: 10px; z-index: 60; font-size: 12px; letter-spacing: 2px; color: #999; opacity: 0; transition: opacity .6s ease; pointer-events: none; }
-        #deathCounter.visible { opacity: 1; }
+        #deathCounter.visible { opacity: 1; animation: dp 1.1s ease-out; }
 
         #muteMark { position: fixed; top: 20px; left: 20px; z-index: 500; color: #ccc; }
         #muteMark.visible { color: #f88; }
@@ -85,6 +85,11 @@
         #introMessage .intro-title { font-size: 16px; letter-spacing: 4px; margin-bottom: 22px; color: #ccc; }
         #introMessage .intro-body { white-space: pre-line; }
         #introMessage .intro-hint { margin-top: 34px; color: #555; }
+
+        @keyframes dp {
+            0% { transform: scale(2.2); }
+            to { transform: scale(1); }
+        }
 
         @keyframes glitchFlash {
             0%   { background: rgba(255,0,80,.18); }

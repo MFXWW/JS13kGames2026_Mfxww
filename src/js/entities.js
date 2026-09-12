@@ -34,7 +34,8 @@ function gamemap_hasTile(tileX, tileY) {
 
 // ===================== Player 模块（原Player类） =====================
 // Player全局变量
-let PLAYER_size_width = 0.625;
+// 箱宽 0.75 格 = 24 画布px = 源图 unicorn.png 宽，贴图按 1:1 画满箱宽、左右不外扩
+let PLAYER_size_width = 0.75;
 let PLAYER_size_height = 1.125;
 let PLAYER_speed = 4.1;
 let PLAYER_vy = 0;
@@ -50,27 +51,9 @@ let PLAYER_face = 1; // 朝向 1=朝右 -1=朝左（移动时更新，决定角/
 // DEBUG: B 键切换是否高亮真实碰撞箱（正式构建由 --define 剔除）
 let GAME_showBox = false;
 
-// 幽灵独角兽像素形象（tools/unicorn_soul/unicorn.png 24x32 → 等比 0.5 缩放 12x16）
-// 空心描边剪影：内部镂空透底色，镂空处保留原画的两只点状眼
-const SOUL_W = 12, SOUL_H = 16;
-const SOUL_P = [
-    '........##..',
-    '........##..',
-    '.......###..',
-    '..########..',
-    '.##......##.',
-    '.#........#.',
-    '.#..#..##.#.',
-    '.#........#.',
-    '.#........#.',
-    '.#........#.',
-    '.#........#.',
-    '.#.###....##',
-    '.#...#.....#',
-    '##.###....##',
-    '#........##.',
-    '##########..',
-];
+// 玩家剪影贴图：img.bin 中 24x24 的位图帧（同陷阱走 initializeSpriteFramesFromBinFile 解码），
+// 1 源像素 = 1 逻辑px（2× 世界变换下即 2 设备px），不做额外缩放
+const SOUL_W = 24, SOUL_H = 24;
 
 /**
  * 设置玩家位置（替代原setPosition方法）
@@ -380,7 +363,7 @@ function player_renderCrown(ctx, drawX, drawY, drawW) {
 }
 
 /**
- * 渲染玩家（幽灵独角兽）：unicorn_soul 像素剪影——空心头部+角，镂空透底色
+ * 渲染玩家（幽灵独角兽）：img.bin 中的 24x24 剪影帧，底边居中贴盒底
  * @param {CanvasRenderingContext2D} ctx - 已含相机 2× 变换的画布上下文
  */
 function player_render(ctx) {
@@ -393,36 +376,25 @@ function player_render(ctx) {
     }
 
     const ts = GAME_tileSize, c = PLAYER_collision, dir = PLAYER_gravityDir;
-    const px = c.x * ts, pw = c.width * ts;
-    // 逆重力端(头顶)的盒缘；头与角都从这端向“上”伸出
-    const yU = dir > 0 ? c.y * ts : (c.y + c.height) * ts;
-    // 幽灵悬浮：贴图沿“离开地面/天花板”方向轻微上浮(0..1 世界px≈设备2px)，物理盒不动
-    const yF = yU - dir * (Math.sin(performance.now() / 1e3 * 3.5) + 1) / 2;
-
-    // ---- 像素形象：把 SOUL 剪影画进碰撞箱（每格 1 设计行/列 → k×k 设备px）----
-    // 头部/角在逆重力端，随 PLAYER_face 水平镜像，随 dir 反向伸入重力侧；
-    // 水平相对碰撞箱居中（等比 12 格 > 盒 10 格 → 左右各超出约 1 格=2px）
-    const k = Math.max(1, Math.round(pw * 2 / SOUL_W));
     const tf = ctx.getTransform();
-    // 水平居中于碰撞箱：等比 12 格(24px) > 盒 10 格(20px) → 左右各超出 2px
-    const dX0 = Math.round(px * tf.a + tf.e) - (SOUL_W * k - pw * 2) / 2;
-    const dyU = Math.round(yF * tf.a + tf.f);
+    const k = Math.round(tf.a); // 设备px / 逻辑px
+    // 贴图重力侧末端：贴图底边对齐箱底（倒置重力则顶边对齐箱顶）
+    // 幽灵悬浮：沿“离开地面/天花板”方向轻微上浮(0..1 世界px)，物理盒不动
+    const yG = (dir > 0 ? c.y + c.height : c.y) * ts - dir * (Math.sin(performance.now() / 1e3 * 3.5) + 1) / 2;
+    const sy = Math.round(yG * tf.a + tf.f);
+    // 水平居中于箱（贴图 24 宽 = 箱宽 12 的 2 倍，左右各溢出 6 逻辑px 的美术外沿）
+    const sx = Math.round((c.x + c.width / 2) * ts * tf.a + tf.e) - SOUL_W * k / 2;
+
+    // ---- 剪影贴图：按朝向水平镜像、按重力方向上下翻转（头/角始终在逆重力端）----
     ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#000';
-    for (let r = 0; r < SOUL_H; r++) {
-        const yy = dyU + (dir > 0 ? r : -r) * k;
-        const row = SOUL_P[r];
-        for (let cc = 0; cc < SOUL_W; cc++) {
-            if (row.charCodeAt(cc) === 46) continue; // '.'
-            const xx = dX0 + (PLAYER_face > 0 ? cc : SOUL_W - 1 - cc) * k;
-            ctx.fillRect(xx, yy, k, k);
-        }
-    }
+    ctx.setTransform(PLAYER_face * k, 0, 0, dir * k,
+        PLAYER_face > 0 ? sx : sx + SOUL_W * k,
+        dir > 0 ? sy - SOUL_H * k : sy + SOUL_H * k);
+    ctx.drawImage(GAME_SpriteFrameCache.soul, 0, 0);
     ctx.restore();
 
     // 王冠戴在头顶（逆重力端）
-    if (GAME_hasCrown) player_renderCrown(ctx, px, yF, pw);
+    if (GAME_hasCrown) player_renderCrown(ctx, c.x * ts, dir > 0 ? yG - SOUL_H : yG, c.width * ts);
 
     // DEBUG：B 键高亮真实碰撞箱（正式构建由 --define 剔除）
     if (DEBUG && GAME_showBox) {
@@ -456,18 +428,10 @@ function player_renderSuck(ctx) {
     const cy = (s.fromY + (toY - s.fromY) * p) * ts;
     const sc = Math.max(0.02, 1 - p);                  // 整体缩小至消失
     const dir = PLAYER_gravityDir;
-    // 贴图设计格=1 逻辑px（2× 变换下自然放大到 2px/格），绕中心 scale 缩放
+    // 贴图 1:1（2× 变换下 1 逻辑px = 2 设备px），绕中心缩小
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.scale(sc, sc);
-    ctx.fillStyle = '#000';
-    for (let r = 0; r < SOUL_H; r++) {
-        const row = SOUL_P[r];
-        const rr = dir > 0 ? r - SOUL_H / 2 : SOUL_H / 2 - r; // 角始终在逆重力端
-        for (let cc = 0; cc < SOUL_W; cc++) {
-            if (row.charCodeAt(cc) === 46) continue; // '.'
-            ctx.fillRect(cc - SOUL_W / 2, rr, 1, 1);
-        }
-    }
+    ctx.scale(sc, sc * dir);
+    ctx.drawImage(GAME_SpriteFrameCache.soul, -SOUL_W / 2, -SOUL_H / 2);
     ctx.restore();
 }

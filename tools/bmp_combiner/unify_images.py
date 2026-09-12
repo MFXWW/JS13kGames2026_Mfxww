@@ -1,10 +1,9 @@
 from PIL import Image
 import os
 
-# 统一贴图：把陷阱（processing_images）合成一张 112x16 横向贴图（16px 高单行排列）。
-# 独角兽玩家已移除（改红色碰撞箱），不再合成玩家帧。
+# 统一贴图：陷阱（processing_images）合成 112x16 横向单行，玩家剪影 24x24 接在右侧（x=112）。
 # 统一配色为黑色前景 + 透明背景（陷阱红底在此归一）。
-SHEET_W, SHEET_H = 112, 16
+SHEET_W, SHEET_H = 136, 24
 FG = (0, 0, 0, 255)
 BG = (0, 0, 0, 0)
 TRAP_BG = (255, 0, 0)  # 陷阱背景红
@@ -12,8 +11,9 @@ TRAP_BG = (255, 0, 0)  # 陷阱背景红
 BASE = os.path.dirname(os.path.abspath(__file__))
 TRAP_DIR = os.path.join(BASE, 'processing_images')
 OUT_DIR = os.path.join(BASE, 'processing_images_unified')
+PLAYER_PNG = os.path.join(BASE, '..', 'unicorn_soul', 'unicorn.png')
 
-# (来源路径, x, y)：各陷阱帧按 16px 高横向排列（button 两帧为 16x8，贴顶放）
+# (来源路径, x, y)：各陷阱帧按 16px 高横向排列（button 两帧为 16x8，贴顶放）；玩家接在陷阱右侧
 layout = [
     (os.path.join(TRAP_DIR, 'black_hole1.png'),       0,  0),
     (os.path.join(TRAP_DIR, 'black_hole2.png'),      16,  0),
@@ -22,6 +22,7 @@ layout = [
     (os.path.join(TRAP_DIR, 'button_default.png'),   64,  0),
     (os.path.join(TRAP_DIR, 'button_triggered.png'), 80,  0),
     (os.path.join(TRAP_DIR, 'destination.png'),      96,  0),
+    (PLAYER_PNG,                                    112,  0),
 ]
 
 sheet = Image.new('RGBA', (SHEET_W, SHEET_H), BG)
